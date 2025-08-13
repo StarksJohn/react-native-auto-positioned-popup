@@ -1,0 +1,72 @@
+{
+  "name": "react-native-auto-positioned-popup",
+  "version": "1.0.0",
+  "description": "A highly customizable React Native auto-positioned popup component with search functionality and flexible styling options",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "files": [
+    "lib/",
+    "src/",
+    "README.md",
+    "README_zh.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "npm run clean && tsc",
+    "watch": "tsc --watch",
+    "clean": "rmdir /s /q lib 2>nul || rm -rf lib",
+    "prepare": "npm run build",
+    "prepublishOnly": "npm run build && npm run lint",
+    "postpublish": "echo \"Package published successfully! 🎉\"",
+    "test": "echo \"No tests specified\" && exit 0",
+    "lint": "eslint src --ext .ts,.tsx",
+    "lint:fix": "eslint src --ext .ts,.tsx --fix",
+    "type-check": "tsc --noEmit",
+    "pack-test": "npm pack --dry-run",
+    "release:patch": "npm version patch && npm publish",
+    "release:minor": "npm version minor && npm publish",
+    "release:major": "npm version major && npm publish",
+    "dev": "npm run watch"
+  },
+  "keywords": [
+    "react-native",
+    "popup",
+    "dropdown",
+    "auto-positioned",
+    "search",
+    "flatlist",
+    "autocomplete",
+    "typescript",
+    "ios",
+    "android"
+  ],
+  "author": "Stark <stark@example.com>",
+  "license": "MIT",
+  "homepage": "https://github.com/your-username/react-native-auto-positioned-popup#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/your-username/react-native-auto-positioned-popup.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-username/react-native-auto-positioned-popup/issues"
+  },
+  "peerDependencies": {
+    "react": ">=16.8.0",
+    "react-native": ">=0.60.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.2.1",
+    "@types/react": "^18.3.23",
+    "@types/react-native": "^0.72.8",
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
+    "eslint": "^8.57.1",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-native": "^4.1.0",
+    "typescript": "^5.9.2"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "react-native": "src/index.tsx"
+}
