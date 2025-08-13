@@ -2,6 +2,8 @@
 
 A highly customizable React Native auto-positioned popup component with search functionality and flexible styling options. Perfect for dropdowns, autocomplete inputs, and selection lists.
 
+English | [中文](./README_zh.md)
+
 ## Features
 
 🚀 **Auto-positioning**: Automatically adjusts popup position based on screen space  
@@ -43,8 +45,6 @@ const MyComponent = () => {
         { id: '3', title: 'Option 3' },
       ],
       pageIndex: 0,
-      totalCount: 3,
-      totalPage: 1,
       needLoadMore: false,
     };
   };
@@ -158,8 +158,6 @@ interface SelectedItem {
 interface Data {
   items: SelectedItem[];
   pageIndex: number;
-  totalCount: number;
-  totalPage: number;
   needLoadMore: boolean;
 }
 ```
@@ -216,8 +214,6 @@ const fetchDataWithSearch = async ({ pageIndex, pageSize, searchQuery }) => {
   return {
     items: filteredItems.slice(pageIndex * pageSize, (pageIndex + 1) * pageSize),
     pageIndex,
-    totalCount: filteredItems.length,
-    totalPage: Math.ceil(filteredItems.length / pageSize),
     needLoadMore: (pageIndex + 1) * pageSize < filteredItems.length,
   };
 };

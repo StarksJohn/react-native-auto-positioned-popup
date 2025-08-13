@@ -45,8 +45,6 @@ const MyComponent = () => {
         { id: '3', title: '选项 3' },
       ],
       pageIndex: 0,
-      totalCount: 3,
-      totalPage: 1,
       needLoadMore: false,
     };
   };
@@ -160,8 +158,6 @@ interface SelectedItem {
 interface Data {
   items: SelectedItem[];
   pageIndex: number;
-  totalCount: number;
-  totalPage: number;
   needLoadMore: boolean;
 }
 ```
@@ -218,8 +214,6 @@ const fetchDataWithSearch = async ({ pageIndex, pageSize, searchQuery }) => {
   return {
     items: filteredItems.slice(pageIndex * pageSize, (pageIndex + 1) * pageSize),
     pageIndex,
-    totalCount: filteredItems.length,
-    totalPage: Math.ceil(filteredItems.length / pageSize),
     needLoadMore: (pageIndex + 1) * pageSize < filteredItems.length,
   };
 };

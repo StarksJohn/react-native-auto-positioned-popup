@@ -68,5 +68,8 @@
   "engines": {
     "node": ">=14.0.0"
   },
-  "react-native": "src/index.tsx"
+  "react-native": "src/index.tsx",
+  "dependencies": {
+    "react-native-advanced-flatlist": "^1.0.4"
+  }
 }

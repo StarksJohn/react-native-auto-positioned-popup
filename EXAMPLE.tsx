@@ -41,8 +41,6 @@ const ExampleUsage: React.FC = () => {
     return {
       items,
       pageIndex,
-      totalCount: filteredData.length,
-      totalPage: Math.ceil(filteredData.length / pageSize),
       needLoadMore: endIndex < filteredData.length,
     };
   };
@@ -59,8 +57,6 @@ const ExampleUsage: React.FC = () => {
     return {
       items: colors,
       pageIndex: 0,
-      totalCount: colors.length,
-      totalPage: 1,
       needLoadMore: false,
     };
   };

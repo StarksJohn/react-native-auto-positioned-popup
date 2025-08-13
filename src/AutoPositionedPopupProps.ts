@@ -6,8 +6,6 @@ import { NativeSyntheticEvent } from 'react-native/Libraries/Types/CoreEventType
 export interface Data {
   items: any[];
   pageIndex: number;
-  totalCount: number;
-  totalPage: number;
   needLoadMore: boolean;
 }
 

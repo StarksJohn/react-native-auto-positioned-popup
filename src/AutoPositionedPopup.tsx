@@ -13,7 +13,6 @@ import React, {
 } from 'react';
 import {
   Dimensions,
-  FlatList,
   Keyboard,
   Modal,
   Text,
@@ -22,6 +21,7 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
+import { AdvancedFlatList } from 'react-native-advanced-flatlist';
 import { TextInputSubmitEditingEventData } from 'react-native/Libraries/Components/TextInput/TextInput';
 import { LayoutRectangle, NativeSyntheticEvent } from 'react-native/Libraries/Types/CoreEventTypes';
 import { AutoPositionedPopupProps, Data, SelectedItem } from './AutoPositionedPopupProps';
@@ -80,7 +80,7 @@ const ListItem: React.FC<{
   );
 });
 
-// Popup list component with FlatList
+// Popup list component with AdvancedFlatList
 interface PopupListProps {
   data: SelectedItem[];
   selectedItem?: SelectedItem;
@@ -113,7 +113,7 @@ const PopupList: React.FC<PopupListProps> = memo(({
 
   return (
     <View style={[styles.autoPositionedPopupList, { backgroundColor: theme.colors.background }]}>
-      <FlatList
+      <AdvancedFlatList
         data={data}
         keyExtractor={keyExtractor}
         renderItem={renderItem || defaultRenderItem}
