@@ -57,4 +57,5 @@ export interface AutoPositionedPopupProps {
   AutoPositionedPopupBtnStyle?: ViewStyle;
   AutoPositionedPopupBtnDisabled?: boolean;
   centerDisplay?: boolean;
+  selectedItemBackgroundColor?: string;
 }

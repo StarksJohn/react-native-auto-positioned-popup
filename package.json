@@ -26,6 +26,11 @@
     "release:patch": "npm version patch && npm publish",
     "release:minor": "npm version minor && npm publish",
     "release:major": "npm version major && npm publish",
+    "release": "node scripts/release.js",
+    "release:dry": "node scripts/release.js --dry-run",
+    "release:patch-auto": "node scripts/release.js --version patch",
+    "release:minor-auto": "node scripts/release.js --version minor",
+    "release:major-auto": "node scripts/release.js --version major",
     "dev": "npm run watch"
   },
   "keywords": [

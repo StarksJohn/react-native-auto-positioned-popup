@@ -27,6 +27,21 @@ import { AutoPositionedPopupProps, Data, SelectedItem } from './AutoPositionedPo
 import styles from './AutoPositionedPopup.style';
 import { useRootView } from './RootViewContext';
 
+// Lightweight emitter to decouple TextInput and list without re-rendering context
+type QueryListener = (query: string) => void;
+const queryChangeListeners: QueryListener[] = [];
+const emitQueryChange = (query: string) => {
+  console.log('AutoPositionedPopup.tsx emitQueryChange query=', query, ' listeners=', queryChangeListeners.length);
+  queryChangeListeners.forEach((l) => l(query));
+};
+const subscribeQueryChange = (listener: QueryListener) => {
+  queryChangeListeners.push(listener);
+  return () => {
+    const idx = queryChangeListeners.indexOf(listener);
+    if (idx !== -1) queryChangeListeners.splice(idx, 1);
+  };
+};
+
 // Default theme colors interface
 interface Theme {
   colors: {
@@ -55,16 +70,17 @@ const ListItem: React.FC<{
   onItemPress: (item: SelectedItem) => void;
   theme: Theme;
   rootViewsRef?: React.MutableRefObject<any[]>;
-}> = memo(({ item, index, selectedItem, onItemPress, theme, rootViewsRef }) => {
+  selectedItemBackgroundColor?: string;
+}> = memo(({ item, index, selectedItem, onItemPress, theme, rootViewsRef, selectedItemBackgroundColor = 'rgba(116, 116, 128, 0.08)' }) => {
   const isSelected = item.id === selectedItem?.id;
-  
-  return (
+
+  return useMemo(() => (
     <TouchableOpacity
       key={item.id}
       style={[
         styles.commonModalRow,
         {
-          backgroundColor: isSelected ? 'rgba(116, 116, 128, 0.08)' : 'transparent',
+          backgroundColor: isSelected ? selectedItemBackgroundColor : 'transparent',
           borderColor: theme.colors.border,
         },
       ]}
@@ -76,15 +92,15 @@ const ListItem: React.FC<{
         onItemPress(item);
       }}
     >
-      <Text 
-        style={[styles.ListItemCode, { color: theme.colors.text }]} 
-        numberOfLines={1} 
+      <Text
+        style={[styles.ListItemCode, { color: theme.colors.text }]}
+        numberOfLines={1}
         ellipsizeMode="tail"
       >
         {item.title}
       </Text>
     </TouchableOpacity>
-  );
+  ), [item, index, selectedItem, onItemPress, theme, rootViewsRef, isSelected, selectedItemBackgroundColor]);
 });
 
 // Popup list component with AdvancedFlatList
@@ -96,6 +112,11 @@ interface PopupListProps {
   keyExtractor?: (item: SelectedItem) => string;
   theme: Theme;
   rootViewsRef?: React.MutableRefObject<any[]>;
+  fetchData?: (params: { pageIndex: number; pageSize: number; searchQuery?: string }) => Promise<Data | null>;
+  localSearch?: boolean;
+  pageSize?: number;
+  onDataUpdate?: (newData: SelectedItem[]) => void;
+  selectedItemBackgroundColor?: string;
 }
 
 const PopupList: React.FC<PopupListProps> = memo(({
@@ -106,25 +127,72 @@ const PopupList: React.FC<PopupListProps> = memo(({
   keyExtractor = (item: SelectedItem) => String(item.id),
   theme,
   rootViewsRef,
+  fetchData,
+  localSearch = false,
+  pageSize = 20,
+  onDataUpdate,
+  selectedItemBackgroundColor,
 }) => {
+  const [internalData, setInternalData] = useState<SelectedItem[]>(data);
+  const searchQueryRef = useRef<string>('');
+
+  // Sync external data changes
+  useEffect(() => {
+    setInternalData(data);
+  }, [data]);
+
+  // Listen to search query changes
+  useEffect(() => {
+    const unsubscribe = subscribeQueryChange(async (newQuery: string) => {
+      console.log('PopupList subscribeQueryChange newQuery=', newQuery);
+      searchQueryRef.current = newQuery;
+
+      if (fetchData) {
+        try {
+          const result = await fetchData({
+            pageIndex: 0,
+            pageSize,
+            searchQuery: newQuery,
+          });
+
+          if (result?.items) {
+            setInternalData(result.items);
+            onDataUpdate?.(result.items);
+          }
+        } catch (error) {
+          console.error('PopupList fetchData error:', error);
+        }
+      } else if (localSearch) {
+        // Local filtering
+        const filtered = data.filter(item =>
+          item.title.toLowerCase().includes(newQuery.toLowerCase())
+        );
+        setInternalData(filtered);
+        onDataUpdate?.(filtered);
+      }
+    });
+
+    return unsubscribe;
+  }, [fetchData, localSearch, pageSize, data, onDataUpdate]);
   const defaultRenderItem = useCallback(
     ({ item, index }: { item: SelectedItem; index: number }) => (
-      <ListItem 
-        item={item} 
-        index={index} 
+      <ListItem
+        item={item}
+        index={index}
         selectedItem={selectedItem}
         onItemPress={onItemPress}
         theme={theme}
         rootViewsRef={rootViewsRef}
+        selectedItemBackgroundColor={selectedItemBackgroundColor}
       />
     ),
-    [selectedItem, onItemPress, theme, rootViewsRef]
+    [selectedItem, onItemPress, theme, rootViewsRef, selectedItemBackgroundColor]
   );
 
   return (
     <View style={[styles.autoPositionedPopupList, { backgroundColor: theme.colors.background }]}>
       <AdvancedFlatList
-        data={data}
+        data={internalData}
         keyExtractor={keyExtractor}
         renderItem={renderItem || defaultRenderItem}
         keyboardShouldPersistTaps="always"
@@ -165,19 +233,19 @@ const AutoPositionedPopup: MemoExoticComponent<
         AutoPositionedPopupBtnDisabled = false,
         forceRemoveAllRootViewOnItemSelected = false,
         centerDisplay = false,
+        selectedItemBackgroundColor = 'rgba(116, 116, 128, 0.08)',
       } = props;
 
       // Use RootView context
       const { addRootView, removeRootView, rootViews, searchQuery: contextSearchQuery, setSearchQuery: setContextSearchQuery } = useRootView();
       const rootViewsRef = useRef(rootViews);
-      
+
       useEffect(() => {
         rootViewsRef.current = rootViews;
       }, [rootViews]);
 
       // State management
       const [isVisible, setIsVisible] = useState(false);
-      const [searchQuery, setSearchQuery] = useState('');
       const [data, setData] = useState<SelectedItem[]>([]);
       const [loading, setLoading] = useState(false);
       const [popupPosition, setPopupPosition] = useState<{
@@ -187,10 +255,11 @@ const AutoPositionedPopup: MemoExoticComponent<
       }>({ top: 0, left: 0, width: 0 });
       const popupId = useRef(`popup-${tag}-${Date.now()}`);
 
-      // Refs
+      // Refs for performance optimization
       const containerRef = useRef<View>(null);
       const textInputRef = useRef<RNTextInput>(null);
       const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+      const searchQueryRef = useRef<string>(''); // Use ref instead of state to avoid re-renders
 
       // Constants
       const LIST_HEIGHT = 200;
@@ -207,7 +276,7 @@ const AutoPositionedPopup: MemoExoticComponent<
             pageSize,
             searchQuery: query,
           });
-          
+
           if (result?.items) {
             setData(result.items);
           }
@@ -218,26 +287,27 @@ const AutoPositionedPopup: MemoExoticComponent<
         }
       }, [fetchData, pageSize]);
 
-      // Handle search query change with debounce
+      // Handle search query change with debounce and event emission
       const handleSearchChange = useCallback((query: string) => {
-        setSearchQuery(query);
+        // Store in ref to avoid re-renders
+        searchQueryRef.current = query;
 
+        // Update TextInput value directly if needed
+        if (textInputRef.current) {
+          // The TextInput's value will be controlled by its own state
+        }
+
+        // Clear previous debounce timer
         if (debounceTimerRef.current) {
           clearTimeout(debounceTimerRef.current);
         }
 
+        // Use debounce for performance optimization
         debounceTimerRef.current = setTimeout(() => {
-          if (localSearch) {
-            // Filter local data
-            if (fetchData) {
-              loadData(query);
-            }
-          } else {
-            // Fetch from remote
-            loadData(query);
-          }
-        }, 300);
-      }, [localSearch, loadData]);
+          // Emit query change event to decouple components and avoid context re-rendering
+          emitQueryChange(searchQueryRef.current);
+        }, 300); // Use 300ms debounce like the original
+      }, []);
 
       // Calculate popup position
       const calculatePosition = useCallback(() => {
@@ -271,12 +341,19 @@ const AutoPositionedPopup: MemoExoticComponent<
       // Hide popup using RootView
       const hidePopup = useCallback(() => {
         setIsVisible(false);
-        setSearchQuery('');
+        // Reset search query
+        searchQueryRef.current = '';
         if (textInputRef.current) {
           textInputRef.current.blur();
+          textInputRef.current.clear?.(); // Clear the TextInput
         }
         removeRootView(popupId.current, forceRemoveAllRootViewOnItemSelected, rootViewsRef.current);
       }, [removeRootView, forceRemoveAllRootViewOnItemSelected]);
+
+      // Handle data updates from PopupList
+      const handleDataUpdate = useCallback((newData: SelectedItem[]) => {
+        setData(newData);
+      }, []);
 
       // Handle item selection
       const handleItemPress = useCallback((item: SelectedItem) => {
@@ -288,8 +365,8 @@ const AutoPositionedPopup: MemoExoticComponent<
       const showPopup = useCallback(() => {
         calculatePosition();
         setIsVisible(true);
-        loadData(searchQuery);
-        
+        loadData(searchQueryRef.current);
+
         // Wait for position to be calculated
         setTimeout(() => {
           const popupComponent = (
@@ -333,7 +410,7 @@ const AutoPositionedPopup: MemoExoticComponent<
                     ]}
                     placeholder={placeholder}
                     placeholderTextColor={theme.colors.placeholderText}
-                    value={searchQuery}
+                    defaultValue={searchQueryRef.current}
                     onChangeText={handleSearchChange}
                     onSubmitEditing={(e: NativeSyntheticEvent<TextInputSubmitEditingEventData>) => {
                       onSubmitEditing?.(e);
@@ -343,7 +420,7 @@ const AutoPositionedPopup: MemoExoticComponent<
                     {...TextInputProps}
                   />
                 )}
-                
+
                 <PopupList
                   data={data}
                   selectedItem={selectedItem}
@@ -352,11 +429,16 @@ const AutoPositionedPopup: MemoExoticComponent<
                   keyExtractor={keyExtractor}
                   theme={theme}
                   rootViewsRef={rootViewsRef}
+                  fetchData={fetchData}
+                  localSearch={localSearch}
+                  pageSize={pageSize}
+                  onDataUpdate={handleDataUpdate}
+                  selectedItemBackgroundColor={selectedItemBackgroundColor}
                 />
               </View>
             </TouchableOpacity>
           );
-          
+
           addRootView({
             id: popupId.current,
             style: {
@@ -372,12 +454,12 @@ const AutoPositionedPopup: MemoExoticComponent<
             centerDisplay: centerDisplay,
           });
         }, 100);
-      }, [calculatePosition, loadData, searchQuery, popupPosition, useTextInput, placeholder, theme, inputStyle, TextInputProps, data, selectedItem, renderItem, keyExtractor, centerDisplay, addRootView, hidePopup, handleSearchChange, handleItemPress, LIST_HEIGHT]);
+      }, [calculatePosition, loadData, popupPosition, useTextInput, placeholder, theme, inputStyle, TextInputProps, data, selectedItem, renderItem, keyExtractor, centerDisplay, addRootView, hidePopup, handleSearchChange, handleItemPress, LIST_HEIGHT, selectedItemBackgroundColor]);
 
       // Handle button press
       const handleButtonPress = useCallback(() => {
         if (AutoPositionedPopupBtnDisabled) return;
-        
+
         if (useTextInput) {
           showPopup();
           // Focus text input after a short delay

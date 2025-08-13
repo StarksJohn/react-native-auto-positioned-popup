@@ -47,6 +47,7 @@ This is a React Native library that provides an auto-positioned popup component 
 - **Auto-positioning**: Uses screen dimensions and component layout to determine optimal popup position
 - **Search functionality**: Debounced search with 300ms delay, supports both local and remote filtering
 - **Performance optimization**: Uses React.memo, useMemo, useCallback, and AdvancedFlatList for efficient rendering
+- **Event-driven architecture**: QueryListener system decouples TextInput from list to prevent unnecessary re-renders
 - **Dynamic view management**: Uses RootViewContext for modal-like popup display without React Native Modal
 - **TypeScript support**: Full type definitions with strict typing enabled
 
@@ -85,6 +86,14 @@ This is a React Native library that provides an auto-positioned popup component 
 - Separate style definitions in .style.ts files
 - Export types alongside components from index.ts
 
+### Performance Optimizations
+- **QueryListener Event System**: Lightweight emitter pattern that decouples TextInput and list components, preventing unnecessary re-renders and keyboard flickering
+- **Ref-based Query Storage**: Uses `searchQueryRef` instead of state to store search queries, avoiding component re-renders
+- **Debounced Search**: 300ms debounce mechanism reduces API calls and improves performance
+- **Event-driven Updates**: PopupList subscribes to query changes via events rather than props/context updates
+- **Memory Efficient**: Event listeners are properly cleaned up on component unmount
+- **ListItem useMemo Optimization**: ListItem component uses useMemo to prevent unnecessary re-renders with dependency array [item, index, selectedItem, onItemPress, theme, rootViewsRef, isSelected]
+
 ### Development Notes
 - Library requires react-native-advanced-flatlist as dependency
 - Peer dependencies: react >=16.8.0, react-native >=0.60.0
@@ -94,3 +103,4 @@ This is a React Native library that provides an auto-positioned popup component 
 - Supports both controlled and uncontrolled usage patterns
 - Supports forceRemoveAllRootViewOnItemSelected for clearing all popups
 - Supports centerDisplay option for centered modal display
+- QueryListener system prevents keyboard flickering and context re-rendering issues
