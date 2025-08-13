@@ -14,7 +14,6 @@ import React, {
 import {
   Dimensions,
   Keyboard,
-  Modal,
   Text,
   TextInput as RNTextInput,
   TouchableOpacity,
@@ -26,6 +25,7 @@ import { TextInputSubmitEditingEventData } from 'react-native/Libraries/Componen
 import { LayoutRectangle, NativeSyntheticEvent } from 'react-native/Libraries/Types/CoreEventTypes';
 import { AutoPositionedPopupProps, Data, SelectedItem } from './AutoPositionedPopupProps';
 import styles from './AutoPositionedPopup.style';
+import { useRootView } from './RootViewContext';
 
 // Default theme colors interface
 interface Theme {
@@ -54,7 +54,8 @@ const ListItem: React.FC<{
   selectedItem?: SelectedItem;
   onItemPress: (item: SelectedItem) => void;
   theme: Theme;
-}> = memo(({ item, index, selectedItem, onItemPress, theme }) => {
+  rootViewsRef?: React.MutableRefObject<any[]>;
+}> = memo(({ item, index, selectedItem, onItemPress, theme, rootViewsRef }) => {
   const isSelected = item.id === selectedItem?.id;
   
   return (
@@ -67,7 +68,13 @@ const ListItem: React.FC<{
           borderColor: theme.colors.border,
         },
       ]}
-      onPress={() => onItemPress(item)}
+      onPress={() => {
+        console.log('AutoPositionedPopup.tsx ListItem onPress item=', item);
+        if (rootViewsRef) {
+          console.log('AutoPositionedPopup.tsx ListItem onPress rootViews=', rootViewsRef.current);
+        }
+        onItemPress(item);
+      }}
     >
       <Text 
         style={[styles.ListItemCode, { color: theme.colors.text }]} 
@@ -88,6 +95,7 @@ interface PopupListProps {
   renderItem?: ({ item, index }: { item: SelectedItem; index: number }) => React.ReactElement;
   keyExtractor?: (item: SelectedItem) => string;
   theme: Theme;
+  rootViewsRef?: React.MutableRefObject<any[]>;
 }
 
 const PopupList: React.FC<PopupListProps> = memo(({
@@ -97,6 +105,7 @@ const PopupList: React.FC<PopupListProps> = memo(({
   renderItem,
   keyExtractor = (item: SelectedItem) => String(item.id),
   theme,
+  rootViewsRef,
 }) => {
   const defaultRenderItem = useCallback(
     ({ item, index }: { item: SelectedItem; index: number }) => (
@@ -106,9 +115,10 @@ const PopupList: React.FC<PopupListProps> = memo(({
         selectedItem={selectedItem}
         onItemPress={onItemPress}
         theme={theme}
+        rootViewsRef={rootViewsRef}
       />
     ),
-    [selectedItem, onItemPress, theme]
+    [selectedItem, onItemPress, theme, rootViewsRef]
   );
 
   return (
@@ -153,7 +163,17 @@ const AutoPositionedPopup: MemoExoticComponent<
         CustomRow = ({ children }) => <View>{children}</View>,
         keyExtractor = (item: any) => item?.id,
         AutoPositionedPopupBtnDisabled = false,
+        forceRemoveAllRootViewOnItemSelected = false,
+        centerDisplay = false,
       } = props;
+
+      // Use RootView context
+      const { addRootView, removeRootView, rootViews, searchQuery: contextSearchQuery, setSearchQuery: setContextSearchQuery } = useRootView();
+      const rootViewsRef = useRef(rootViews);
+      
+      useEffect(() => {
+        rootViewsRef.current = rootViews;
+      }, [rootViews]);
 
       // State management
       const [isVisible, setIsVisible] = useState(false);
@@ -165,6 +185,7 @@ const AutoPositionedPopup: MemoExoticComponent<
         left: number;
         width: number;
       }>({ top: 0, left: 0, width: 0 });
+      const popupId = useRef(`popup-${tag}-${Date.now()}`);
 
       // Refs
       const containerRef = useRef<View>(null);
@@ -247,27 +268,111 @@ const AutoPositionedPopup: MemoExoticComponent<
         });
       }, [popUpViewStyle]);
 
-      // Show popup
-      const showPopup = useCallback(() => {
-        calculatePosition();
-        setIsVisible(true);
-        loadData(searchQuery);
-      }, [calculatePosition, loadData, searchQuery]);
-
-      // Hide popup
+      // Hide popup using RootView
       const hidePopup = useCallback(() => {
         setIsVisible(false);
         setSearchQuery('');
         if (textInputRef.current) {
           textInputRef.current.blur();
         }
-      }, []);
+        removeRootView(popupId.current, forceRemoveAllRootViewOnItemSelected, rootViewsRef.current);
+      }, [removeRootView, forceRemoveAllRootViewOnItemSelected]);
 
       // Handle item selection
       const handleItemPress = useCallback((item: SelectedItem) => {
         onItemSelected?.(item);
         hidePopup();
       }, [onItemSelected, hidePopup]);
+
+      // Show popup using RootView
+      const showPopup = useCallback(() => {
+        calculatePosition();
+        setIsVisible(true);
+        loadData(searchQuery);
+        
+        // Wait for position to be calculated
+        setTimeout(() => {
+          const popupComponent = (
+            <TouchableOpacity
+              style={{
+                flex: 1,
+                backgroundColor: 'rgba(0, 0, 0, 0.3)',
+              }}
+              activeOpacity={1}
+              onPress={hidePopup}
+            >
+              <View
+                style={{
+                  position: 'absolute',
+                  top: popupPosition.top,
+                  left: popupPosition.left,
+                  width: popupPosition.width,
+                  height: LIST_HEIGHT,
+                  backgroundColor: theme.colors.background,
+                  borderRadius: 8,
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.25,
+                  shadowRadius: 3.84,
+                  elevation: 5,
+                }}
+              >
+                {useTextInput && (
+                  <RNTextInput
+                    ref={textInputRef}
+                    style={[
+                      styles.inputStyle,
+                      {
+                        height: 40,
+                        borderBottomWidth: 1,
+                        borderBottomColor: theme.colors.border,
+                        paddingHorizontal: 12,
+                        color: theme.colors.text,
+                      },
+                      inputStyle,
+                    ]}
+                    placeholder={placeholder}
+                    placeholderTextColor={theme.colors.placeholderText}
+                    value={searchQuery}
+                    onChangeText={handleSearchChange}
+                    onSubmitEditing={(e: NativeSyntheticEvent<TextInputSubmitEditingEventData>) => {
+                      onSubmitEditing?.(e);
+                      Keyboard.dismiss();
+                    }}
+                    returnKeyType="done"
+                    {...TextInputProps}
+                  />
+                )}
+                
+                <PopupList
+                  data={data}
+                  selectedItem={selectedItem}
+                  onItemPress={handleItemPress}
+                  renderItem={renderItem}
+                  keyExtractor={keyExtractor}
+                  theme={theme}
+                  rootViewsRef={rootViewsRef}
+                />
+              </View>
+            </TouchableOpacity>
+          );
+          
+          addRootView({
+            id: popupId.current,
+            style: {
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+            },
+            component: popupComponent,
+            useModal: true,
+            onModalClose: hidePopup,
+            centerDisplay: centerDisplay,
+          });
+        }, 100);
+      }, [calculatePosition, loadData, searchQuery, popupPosition, useTextInput, placeholder, theme, inputStyle, TextInputProps, data, selectedItem, renderItem, keyExtractor, centerDisplay, addRootView, hidePopup, handleSearchChange, handleItemPress, LIST_HEIGHT]);
 
       // Handle button press
       const handleButtonPress = useCallback(() => {
@@ -332,76 +437,6 @@ const AutoPositionedPopup: MemoExoticComponent<
                 </Text>
               )}
             </TouchableOpacity>
-
-            {/* Modal for popup display */}
-            <Modal
-              visible={isVisible}
-              transparent={true}
-              animationType="fade"
-              onRequestClose={hidePopup}
-            >
-              <TouchableOpacity
-                style={{
-                  flex: 1,
-                  backgroundColor: 'rgba(0, 0, 0, 0.3)',
-                }}
-                activeOpacity={1}
-                onPress={hidePopup}
-              >
-                <View
-                  style={{
-                    position: 'absolute',
-                    top: popupPosition.top,
-                    left: popupPosition.left,
-                    width: popupPosition.width,
-                    height: LIST_HEIGHT,
-                    backgroundColor: theme.colors.background,
-                    borderRadius: 8,
-                    shadowColor: '#000',
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.25,
-                    shadowRadius: 3.84,
-                    elevation: 5,
-                  }}
-                >
-                  {useTextInput && (
-                    <RNTextInput
-                      ref={textInputRef}
-                      style={[
-                        styles.inputStyle,
-                        {
-                          height: 40,
-                          borderBottomWidth: 1,
-                          borderBottomColor: theme.colors.border,
-                          paddingHorizontal: 12,
-                          color: theme.colors.text,
-                        },
-                        inputStyle,
-                      ]}
-                      placeholder={placeholder}
-                      placeholderTextColor={theme.colors.placeholderText}
-                      value={searchQuery}
-                      onChangeText={handleSearchChange}
-                      onSubmitEditing={(e: NativeSyntheticEvent<TextInputSubmitEditingEventData>) => {
-                        onSubmitEditing?.(e);
-                        Keyboard.dismiss();
-                      }}
-                      returnKeyType="done"
-                      {...TextInputProps}
-                    />
-                  )}
-                  
-                  <PopupList
-                    data={data}
-                    selectedItem={selectedItem}
-                    onItemPress={handleItemPress}
-                    renderItem={renderItem}
-                    keyExtractor={keyExtractor}
-                    theme={theme}
-                  />
-                </View>
-              </TouchableOpacity>
-            </Modal>
           </View>
         </CustomRow>
       );

@@ -29,29 +29,33 @@ This is a React Native library that provides an auto-positioned popup component 
 
 ### File Structure
 - `src/` - Source TypeScript files
-  - `AutoPositionedPopup.tsx` - Main component implementation
+  - `AutoPositionedPopup.tsx` - Main component implementation with RootView integration
   - `AutoPositionedPopupProps.ts` - TypeScript interfaces and props definitions
   - `AutoPositionedPopup.style.ts` - Component styles using StyleSheet
+  - `RootViewContext.tsx` - Context provider for dynamic view management
   - `index.ts` - Main entry point with exports
 - `lib/` - Compiled JavaScript and declaration files (generated)
 
 ### Key Components Architecture
 - **Main Component**: `AutoPositionedPopup` - Forwardable React component with imperative methods
 - **ListItem**: Memoized component for individual list items with selection state
-- **PopupList**: Memoized FlatList wrapper for efficient rendering
+- **PopupList**: Memoized AdvancedFlatList wrapper for efficient rendering
+- **RootViewProvider**: Context provider for dynamic popup view management
 - **Theme System**: Default light theme with customizable colors
 
 ### Core Features Implementation
 - **Auto-positioning**: Uses screen dimensions and component layout to determine optimal popup position
 - **Search functionality**: Debounced search with 300ms delay, supports both local and remote filtering
-- **Performance optimization**: Uses React.memo, useMemo, useCallback, and FlatList for efficient rendering
+- **Performance optimization**: Uses React.memo, useMemo, useCallback, and AdvancedFlatList for efficient rendering
+- **Dynamic view management**: Uses RootViewContext for modal-like popup display without React Native Modal
 - **TypeScript support**: Full type definitions with strict typing enabled
 
 ### Data Flow
 - Data fetching through `fetchData` prop with pagination support
 - Selected item state management through `selectedItem` and `onItemSelected` props
 - Search query debouncing and filtering logic
-- Modal-based popup display with automatic positioning
+- RootView-based popup display with automatic positioning
+- Dynamic view management through RootViewContext for overlay display
 
 ### Styling System
 - Uses React Native StyleSheet for performance
@@ -82,7 +86,11 @@ This is a React Native library that provides an auto-positioned popup component 
 - Export types alongside components from index.ts
 
 ### Development Notes
-- Library has zero runtime dependencies (only peer deps: react >=16.8.0, react-native >=0.60.0)
+- Library requires react-native-advanced-flatlist as dependency
+- Peer dependencies: react >=16.8.0, react-native >=0.60.0
 - Cross-platform compatible (iOS/Android)
-- Uses FlatList for list rendering performance
+- Uses AdvancedFlatList for enhanced list rendering performance
+- Requires wrapping app with RootViewProvider for popup functionality
 - Supports both controlled and uncontrolled usage patterns
+- Supports forceRemoveAllRootViewOnItemSelected for clearing all popups
+- Supports centerDisplay option for centered modal display

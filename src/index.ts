@@ -11,3 +11,6 @@ export type {
 
 // Style exports (optional, for customization)
 export { default as AutoPositionedPopupStyles } from './AutoPositionedPopup.style';
+
+// RootView exports
+export { RootViewProvider, useRootView } from './RootViewContext';

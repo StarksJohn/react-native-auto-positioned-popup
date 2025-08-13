@@ -10,9 +10,9 @@ English | [中文](./README_zh.md)
 🔍 **Search functionality**: Built-in search with debounced input  
 📱 **Cross-platform**: Works on both iOS and Android  
 🎨 **Customizable**: Extensive styling and theming options  
-⚡ **Performance optimized**: Efficient rendering with FlatList  
+⚡ **Performance optimized**: Efficient rendering with AdvancedFlatList  
 🎯 **TypeScript support**: Full TypeScript definitions included  
-📦 **Zero dependencies**: No external dependencies required  
+🔄 **Dynamic view management**: RootView-based popup system  
 
 ## Installation
 
@@ -27,6 +27,22 @@ yarn add react-native-auto-positioned-popup
 ```
 
 ## Basic Usage
+
+First, wrap your app with the `RootViewProvider`:
+
+```tsx
+import { RootViewProvider } from 'react-native-auto-positioned-popup';
+
+const App = () => {
+  return (
+    <RootViewProvider>
+      {/* Your app content */}
+    </RootViewProvider>
+  );
+};
+```
+
+Then use the `AutoPositionedPopup` component:
 
 ```tsx
 import React, { useState } from 'react';
@@ -119,6 +135,155 @@ export default MyComponent;
   }}
   // ... other props
 />
+```
+
+### Complete Dropdown Example (useTextInput=false)
+
+This example shows a complete implementation without search input, suitable for dropdowns and selectors:
+
+```tsx
+import React, { useState } from 'react';
+import { View, Text, Image, StyleSheet } from 'react-native';
+import AutoPositionedPopup, { SelectedItem, Data, RootViewProvider } from 'react-native-auto-positioned-popup';
+
+// Sample data type with color support
+interface ClinicItem extends SelectedItem {
+  code: string;
+  textColor: string;
+  address?: string;
+}
+
+const ClinicSelector = () => {
+  const [selectedClinic, setSelectedClinic] = useState<ClinicItem | null>(null);
+
+  const fetchClinics = async ({ pageIndex, pageSize }): Promise<Data | null> => {
+    // Simulate API call
+    const mockClinics = [
+      { id: '1', title: 'Main Clinic', code: 'MC001', textColor: '#4CAF50', address: '123 Main St' },
+      { id: '2', title: 'Downtown Clinic', code: 'DC002', textColor: '#2196F3', address: '456 Downtown Ave' },
+      { id: '3', title: 'Suburb Clinic', code: 'SC003', textColor: '#FF9800', address: '789 Suburb Rd' },
+    ];
+
+    return {
+      items: mockClinics.map(clinic => ({
+        title: clinic.code,
+        ...clinic,
+      })),
+      pageIndex,
+      needLoadMore: false,
+    };
+  };
+
+  return (
+    <RootViewProvider>
+      <View style={styles.container}>
+        <AutoPositionedPopup
+          tag="clinic-selector"
+          useTextInput={false}
+          localSearch={false}
+          forceRemoveAllRootViewOnItemSelected={true}
+          selectedItem={selectedClinic ? {
+            title: selectedClinic.code,
+            ...selectedClinic,
+          } : undefined}
+          CustomRow={({ children }) => (
+            <View style={styles.sectionRow}>
+              <Text style={styles.sectionRowLabel}>Clinic</Text>
+              {children}
+              <Image
+                source={require('./assets/arrow-down.png')}
+                style={styles.selectArrow}
+              />
+            </View>
+          )}
+          AutoPositionedPopupBtnStyle={styles.selectorButton}
+          btwChildren={() => (
+            <>
+              {!selectedClinic ? (
+                <Text style={styles.placeholderText} numberOfLines={1}>
+                  Please Select
+                </Text>
+              ) : (
+                <View style={styles.selectedItemContainer}>
+                  <View
+                    style={[
+                      styles.colorIndicator,
+                      { backgroundColor: selectedClinic.textColor }
+                    ]}
+                  />
+                  <Text style={styles.selectedText} numberOfLines={1}>
+                    {selectedClinic.code}
+                  </Text>
+                </View>
+              )}
+            </>
+          )}
+          fetchData={fetchClinics}
+          onItemSelected={(item: ClinicItem) => {
+            console.log('Selected clinic:', item);
+            setSelectedClinic(item);
+          }}
+        />
+      </View>
+    </RootViewProvider>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    padding: 20,
+  },
+  sectionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 15,
+    paddingHorizontal: 16,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  sectionRowLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginRight: 12,
+    minWidth: 60,
+  },
+  selectorButton: {
+    flex: 1,
+    alignItems: 'flex-start',
+  },
+  selectArrow: {
+    width: 12,
+    height: 12,
+    marginLeft: 8,
+  },
+  placeholderText: {
+    fontSize: 15,
+    color: '#999',
+  },
+  selectedItemContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  colorIndicator: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    marginRight: 8,
+  },
+  selectedText: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#333',
+  },
+});
+
+export default ClinicSelector;
 ```
 
 ## API Reference

@@ -10,9 +10,9 @@
 🔍 **搜索功能**: 内置防抖搜索功能  
 📱 **跨平台**: 同时支持 iOS 和 Android  
 🎨 **可定制**: 丰富的样式和主题选项  
-⚡ **性能优化**: 使用 FlatList 高效渲染  
+⚡ **性能优化**: 使用 AdvancedFlatList 高效渲染  
 🎯 **TypeScript 支持**: 包含完整的 TypeScript 类型定义  
-📦 **零依赖**: 无需额外的外部依赖  
+🔄 **动态视图管理**: 基于 RootView 的弹窗系统  
 
 ## 安装
 
@@ -27,6 +27,22 @@ yarn add react-native-auto-positioned-popup
 ```
 
 ## 基本用法
+
+首先，使用 `RootViewProvider` 包裹你的应用：
+
+```tsx
+import { RootViewProvider } from 'react-native-auto-positioned-popup';
+
+const App = () => {
+  return (
+    <RootViewProvider>
+      {/* 你的应用内容 */}
+    </RootViewProvider>
+  );
+};
+```
+
+然后使用 `AutoPositionedPopup` 组件：
 
 ```tsx
 import React, { useState } from 'react';
@@ -119,6 +135,155 @@ export default MyComponent;
   }}
   // ... 其他属性
 />
+```
+
+### 完整下拉选择示例 (useTextInput=false)
+
+此示例展示了无搜索输入的完整实现，适用于下拉选择器：
+
+```tsx
+import React, { useState } from 'react';
+import { View, Text, Image, StyleSheet } from 'react-native';
+import AutoPositionedPopup, { SelectedItem, Data, RootViewProvider } from 'react-native-auto-positioned-popup';
+
+// 支持颜色的数据类型示例
+interface ClinicItem extends SelectedItem {
+  code: string;
+  textColor: string;
+  address?: string;
+}
+
+const ClinicSelector = () => {
+  const [selectedClinic, setSelectedClinic] = useState<ClinicItem | null>(null);
+
+  const fetchClinics = async ({ pageIndex, pageSize }): Promise<Data | null> => {
+    // 模拟 API 调用
+    const mockClinics = [
+      { id: '1', title: '主诊所', code: 'MC001', textColor: '#4CAF50', address: '主街123号' },
+      { id: '2', title: '市中心诊所', code: 'DC002', textColor: '#2196F3', address: '市中心大道456号' },
+      { id: '3', title: '郊区诊所', code: 'SC003', textColor: '#FF9800', address: '郊区路789号' },
+    ];
+
+    return {
+      items: mockClinics.map(clinic => ({
+        title: clinic.code,
+        ...clinic,
+      })),
+      pageIndex,
+      needLoadMore: false,
+    };
+  };
+
+  return (
+    <RootViewProvider>
+      <View style={styles.container}>
+        <AutoPositionedPopup
+          tag="clinic-selector"
+          useTextInput={false}
+          localSearch={false}
+          forceRemoveAllRootViewOnItemSelected={true}
+          selectedItem={selectedClinic ? {
+            title: selectedClinic.code,
+            ...selectedClinic,
+          } : undefined}
+          CustomRow={({ children }) => (
+            <View style={styles.sectionRow}>
+              <Text style={styles.sectionRowLabel}>诊所</Text>
+              {children}
+              <Image
+                source={require('./assets/arrow-down.png')}
+                style={styles.selectArrow}
+              />
+            </View>
+          )}
+          AutoPositionedPopupBtnStyle={styles.selectorButton}
+          btwChildren={() => (
+            <>
+              {!selectedClinic ? (
+                <Text style={styles.placeholderText} numberOfLines={1}>
+                  请选择
+                </Text>
+              ) : (
+                <View style={styles.selectedItemContainer}>
+                  <View
+                    style={[
+                      styles.colorIndicator,
+                      { backgroundColor: selectedClinic.textColor }
+                    ]}
+                  />
+                  <Text style={styles.selectedText} numberOfLines={1}>
+                    {selectedClinic.code}
+                  </Text>
+                </View>
+              )}
+            </>
+          )}
+          fetchData={fetchClinics}
+          onItemSelected={(item: ClinicItem) => {
+            console.log('选中的诊所:', item);
+            setSelectedClinic(item);
+          }}
+        />
+      </View>
+    </RootViewProvider>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    padding: 20,
+  },
+  sectionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 15,
+    paddingHorizontal: 16,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  sectionRowLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginRight: 12,
+    minWidth: 60,
+  },
+  selectorButton: {
+    flex: 1,
+    alignItems: 'flex-start',
+  },
+  selectArrow: {
+    width: 12,
+    height: 12,
+    marginLeft: 8,
+  },
+  placeholderText: {
+    fontSize: 15,
+    color: '#999',
+  },
+  selectedItemContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  colorIndicator: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    marginRight: 8,
+  },
+  selectedText: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#333',
+  },
+});
+
+export default ClinicSelector;
 ```
 
 ## API 参考
