@@ -18,11 +18,10 @@ import {
   TextInput as RNTextInput,
   TouchableOpacity,
   View,
-  ViewStyle,
 } from 'react-native';
 import {AdvancedFlatList} from 'react-native-advanced-flatlist';
 import {TextInputSubmitEditingEventData} from 'react-native/Libraries/Components/TextInput/TextInput';
-import {LayoutRectangle, NativeSyntheticEvent} from 'react-native/Libraries/Types/CoreEventTypes';
+import {NativeSyntheticEvent} from 'react-native/Libraries/Types/CoreEventTypes';
 import {AutoPositionedPopupProps, Data, SelectedItem} from './AutoPositionedPopupProps';
 import styles from './AutoPositionedPopup.style';
 import {useRootView} from './RootViewContext';
@@ -203,18 +202,29 @@ const PopupList: React.FC<PopupListProps> = memo(({
   );
 });
 
+// State interface for AutoPositionedPopup
+interface StateProps {
+  isFocus?: boolean;
+  selectedItem?: SelectedItem | any;
+}
+
+// List layout constants
+const listLayout = {
+  height: 200,
+};
+
 // Main AutoPositionedPopup component
 const AutoPositionedPopup: MemoExoticComponent<
   ForwardRefExoticComponent<AutoPositionedPopupProps>
 > = memo(
   forwardRef<unknown, AutoPositionedPopupProps>(
     (props: AutoPositionedPopupProps, parentRef: ForwardedRef<unknown>): React.JSX.Element => {
+      console.log('AutoPositionedPopup props=', props);
       const {
         tag,
         style,
         AutoPositionedPopupBtnStyle,
         placeholder = 'Please Select',
-        textAlign = 'right',
         onSubmitEditing,
         TextInputProps = {},
         inputStyle,
@@ -236,15 +246,81 @@ const AutoPositionedPopup: MemoExoticComponent<
         selectedItemBackgroundColor = 'rgba(116, 116, 128, 0.08)',
       } = props;
 
+      // State management similar to project implementation
+      const [state, setState] = useState<StateProps>({
+        isFocus: false,
+        selectedItem: selectedItem,
+      });
+
       // Use RootView context
-      const {addRootView, removeRootView, rootViews, searchQuery: contextSearchQuery, setSearchQuery: setContextSearchQuery} = useRootView();
+      const {addRootView, removeRootView, rootViews, setSearchQuery: setContextSearchQuery, setRootViewNativeStyle} = useRootView();
       const rootViewsRef = useRef(rootViews);
 
+      // Track TextInput focus and RootView states like project implementation
+      const hasTriggeredFocus = useRef(false);
+      const hasAddedRootView = useRef(false);
+      const hasShownRootView = useRef(false);
+
+      // Additional refs for keyboard and position tracking
+      const ref_isFocus = useRef<boolean>();
+      const ref_isKeyboardFullyShown = useRef<boolean>();
+      const ref_listPos = useRef<any>();
+      const keyboardVisibleRef = useRef(false);
+      const refAutoPositionedPopup = useRef<View>(null);
+
+      // Simple keyboard status tracking (alternative to useKeyboardStatus hook)
+      const [isKeyboardFullyShown, setIsKeyboardFullyShown] = useState(false);
+
+      // Keyboard listeners
       useEffect(() => {
+        const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', () => {
+          setIsKeyboardFullyShown(true);
+        });
+
+        const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
+          setIsKeyboardFullyShown(false);
+        });
+
+        return () => {
+          keyboardDidShowListener?.remove();
+          keyboardDidHideListener?.remove();
+        };
+      }, []);
+
+      useEffect(() => {
+        console.log('AutoPositionedPopup rootViews=', rootViews);
         rootViewsRef.current = rootViews;
+        if (rootViews.length === 0) {
+          hasAddedRootView.current = false;
+          hasShownRootView.current = false;
+          hasTriggeredFocus.current = false;
+          setState((prevState) => {
+            return {
+              ...prevState,
+              isFocus: false,
+            };
+          });
+        }
       }, [rootViews]);
 
-      // State management
+      // Sync selectedItem changes like project implementation
+      useEffect(() => {
+        console.log('AutoPositionedPopup useEffect tag=', tag);
+        console.log('AutoPositionedPopup useEffect selectedItem=', selectedItem);
+        console.log('AutoPositionedPopup useEffect state.selectedItem=', state.selectedItem);
+        if (state.selectedItem?.id !== selectedItem?.id || state.selectedItem?.title !== selectedItem?.title) {
+          console.log('AutoPositionedPopup useEffect selectedItem!=state.selectedItem');
+          setState((prevState) => {
+            return {
+              ...prevState,
+              selectedItem: selectedItem,
+            };
+          });
+        }
+      }, [selectedItem, state.selectedItem, tag]);
+
+
+      // Legacy state for compatibility
       const [isVisible, setIsVisible] = useState(false);
       const [data, setData] = useState<SelectedItem[]>([]);
       const [loading, setLoading] = useState(false);
@@ -456,20 +532,67 @@ const AutoPositionedPopup: MemoExoticComponent<
         }, 100);
       }, [calculatePosition, loadData, popupPosition, useTextInput, placeholder, theme, inputStyle, TextInputProps, data, selectedItem, renderItem, keyExtractor, centerDisplay, addRootView, hidePopup, handleSearchChange, handleItemPress, LIST_HEIGHT, selectedItemBackgroundColor]);
 
-      // Handle button press
+      // Handle button press - following project implementation logic
       const handleButtonPress = useCallback(() => {
         if (AutoPositionedPopupBtnDisabled) return;
 
-        if (useTextInput) {
-          showPopup();
-          // Focus text input after a short delay
-          setTimeout(() => {
-            textInputRef.current?.focus();
-          }, 100);
-        } else {
-          showPopup();
+        console.log('AutoPositionedPopup onPress tag=', tag);
+        console.log('AutoPositionedPopup onPress state.isFocus=', state.isFocus);
+        console.log('AutoPositionedPopup onPress useTextInput=', useTextInput);
+        console.log(
+          'AutoPositionedPopup onPress hasAddedRootView.current=',
+          hasAddedRootView.current
+        );
+        console.log(
+          'AutoPositionedPopup onPress hasShownRootView.current=',
+          hasShownRootView.current
+        );
+        console.log(
+          'AutoPositionedPopup onPress hasTriggeredFocus.current=',
+          hasTriggeredFocus.current
+        );
+        console.log('AutoPositionedPopup onPress state.selectedItem=', state.selectedItem);
+
+        setState((prevState) => {
+          return {
+            ...prevState,
+            isFocus: true,
+          };
+        });
+
+        if (!hasAddedRootView.current && useTextInput) {
+          // TextInput version: hide first, show after keyboard fully appears
+          hasAddedRootView.current = true;
+          hasShownRootView.current = false;
+          addRootView({
+            id: tag,
+            style: {
+              top: 0,
+              left: 0,
+              width: popUpViewStyle?.width,
+              height: listLayout.height,
+              opacity: 0,
+            },
+            component: (
+              <PopupList
+                data={data}
+                selectedItem={state.selectedItem}
+                onItemPress={handleItemPress}
+                renderItem={renderItem}
+                keyExtractor={keyExtractor}
+                theme={theme}
+                rootViewsRef={rootViewsRef}
+                fetchData={fetchData}
+                localSearch={localSearch}
+                pageSize={pageSize}
+                onDataUpdate={handleDataUpdate}
+                selectedItemBackgroundColor={selectedItemBackgroundColor}
+              />
+            ),
+            useModal: false,
+          });
         }
-      }, [AutoPositionedPopupBtnDisabled, useTextInput, showPopup]);
+      }, [AutoPositionedPopupBtnDisabled, useTextInput, state.isFocus, state.selectedItem, tag, hasAddedRootView, hasShownRootView, hasTriggeredFocus, addRootView, popUpViewStyle, data, handleItemPress, renderItem, keyExtractor, theme, rootViewsRef, fetchData, localSearch, pageSize, handleDataUpdate, selectedItemBackgroundColor]);
 
       // Imperative handle for parent component access
       useImperativeHandle(
@@ -485,7 +608,25 @@ const AutoPositionedPopup: MemoExoticComponent<
         [tag, showPopup, hidePopup]
       );
 
-      // Cleanup
+      // Component lifecycle management like project implementation
+      useEffect(() => {
+        console.log(`AutoPositionedPopup componentDidMount tag=`, tag);
+
+        //componentWillUnmount
+        return () => {
+          console.log(`AutoPositionedPopup componentWillUnmount tag=`, tag);
+          removeRootView(tag, forceRemoveAllRootViewOnItemSelected, rootViewsRef.current);
+          setContextSearchQuery('');
+          if (textInputRef.current) {
+            textInputRef.current.blur();
+            hasTriggeredFocus.current = false;
+            hasAddedRootView.current = false;
+            hasShownRootView.current = false;
+          }
+        };
+      }, [tag, removeRootView, forceRemoveAllRootViewOnItemSelected, setContextSearchQuery]);
+
+      // Cleanup debounce timer
       useEffect(() => {
         return () => {
           if (debounceTimerRef.current) {
@@ -494,34 +635,229 @@ const AutoPositionedPopup: MemoExoticComponent<
         };
       }, []);
 
-      // Render the component
-      return (
-        <CustomRow>
-          <View style={[styles.contain, style]} ref={containerRef}>
-            <TouchableOpacity
-              style={[styles.AutoPositionedPopupBtn, AutoPositionedPopupBtnStyle]}
-              disabled={AutoPositionedPopupBtnDisabled}
-              onPress={handleButtonPress}
-            >
-              {btwChildren ? (
-                btwChildren()
-              ) : (
-                <Text
-                  style={[
-                    styles.searchQueryTxt,
-                    selectedItem && {color: theme.colors.text},
-                    labelStyle,
-                  ]}
-                  numberOfLines={1}
-                  ellipsizeMode="tail"
+      useEffect(() => {
+        console.log('AutoPositionedPopup useEffect tag=', tag);
+        console.log('AutoPositionedPopup useEffect state.isFocus=', state.isFocus);
+        console.log('AutoPositionedPopup useEffect isKeyboardFullyShown=', isKeyboardFullyShown);
+        console.log('AutoPositionedPopup useEffect ref_isFocus.current=', ref_isFocus.current);
+        console.log(
+          'AutoPositionedPopup useEffect ref_isKeyboardFullyShown.current=',
+          ref_isKeyboardFullyShown.current
+        );
+        console.log('AutoPositionedPopup useEffect useTextInput=', useTextInput);
+        console.log('AutoPositionedPopup useEffect TextInputProps=', TextInputProps);
+        console.log('AutoPositionedPopup useEffect hasAddedRootView.current=', hasAddedRootView.current);
+        console.log('AutoPositionedPopup useEffect hasShownRootView.current=', hasShownRootView.current);
+
+        if (useTextInput) {
+          if (isKeyboardFullyShown && hasAddedRootView.current && !hasShownRootView.current && state.isFocus) {
+            refAutoPositionedPopup.current?.measureInWindow((x: number, y: number, width: number, height: number) => {
+              console.log('AutoPositionedPopup measureInWindow x=', x, ' y=', y, ' width=', width, ' height=', height);
+              // Get the full screen height (including the status bar and navigation bar)
+              const screenHeight = Dimensions.get('screen').height;
+              console.log('AutoPositionedPopup screenHeight=', screenHeight);
+
+              if (y + height < screenHeight / 2 - listLayout.height / 2) {
+                console.log('AutoPositionedPopup y + height < screenHeight / 2');
+                ref_listPos.current = { x: x, y: y + height, width: width };
+              } else {
+                console.log('AutoPositionedPopup y + height >= screenHeight / 2');
+                ref_listPos.current = { x: x, y: y - listLayout.height, width: width };
+              }
+              console.log('AutoPositionedPopup ref_listPos.current=', ref_listPos.current);
+
+              setRootViewNativeStyle(tag, {
+                top: ref_listPos.current.y,
+                left: popUpViewStyle?.left,
+                width: popUpViewStyle?.width,
+                height: listLayout.height,
+                opacity: 1,
+              });
+              hasShownRootView.current = true;
+            });
+          } else if (!isKeyboardFullyShown && ref_isFocus.current) {
+            console.log(
+              'AutoPositionedPopup isKeyboardFullyShown useEffect removeRootView tag=',
+              tag,
+              ' forceRemoveAllRootViewOnItemSelected=',
+              forceRemoveAllRootViewOnItemSelected
+            );
+            removeRootView(tag, forceRemoveAllRootViewOnItemSelected);
+            setState((prevState) => {
+              return {
+                ...prevState,
+                isFocus: false,
+              };
+            });
+            setContextSearchQuery('');
+            hasAddedRootView.current = false;
+            hasShownRootView.current = false;
+          }
+        } else {
+          if (state.isFocus) {
+            refAutoPositionedPopup.current?.measureInWindow((x: number, y: number, width: number, height: number) => {
+              console.log('AutoPositionedPopup measureInWindow x=', x, ' y=', y, ' width=', width, ' height=', height);
+              // Get the full screen height (including the status bar and navigation bar)
+              const screenHeight = Dimensions.get('screen').height;
+              console.log('AutoPositionedPopup screenHeight=', screenHeight);
+
+              if (y + height < screenHeight / 2 - listLayout.height / 2) {
+                console.log('AutoPositionedPopup y + height < screenHeight / 2');
+                ref_listPos.current = { x: x, y: y + height, width: width };
+              } else {
+                console.log('AutoPositionedPopup y + height >= screenHeight / 2');
+                ref_listPos.current = { x: x, y: y - listLayout.height, width: width };
+              }
+              console.log('AutoPositionedPopup ref_listPos.current=', ref_listPos.current);
+
+              console.log('AutoPositionedPopup addRootView tag=', tag);
+              addRootView({
+                id: tag,
+                style: {
+                  top: ref_listPos.current.y,
+                  left: popUpViewStyle?.left,
+                  width: popUpViewStyle?.width,
+                  height: listLayout.height,
+                  opacity: 1,
+                },
+                component: (
+                  <PopupList
+                    data={data}
+                    selectedItem={state.selectedItem}
+                    onItemPress={handleItemPress}
+                    renderItem={renderItem}
+                    keyExtractor={keyExtractor}
+                    theme={theme}
+                    rootViewsRef={rootViewsRef}
+                    fetchData={fetchData}
+                    localSearch={localSearch}
+                    pageSize={pageSize}
+                    onDataUpdate={handleDataUpdate}
+                    selectedItemBackgroundColor={selectedItemBackgroundColor}
+                  />
+                ),
+                useModal: true,
+                onModalClose: () => {
+                  console.log('AutoPositionedPopup onModalClose tag=', tag);
+                  removeRootView(tag, forceRemoveAllRootViewOnItemSelected, rootViewsRef.current);
+                  setState((prevState) => {
+                    return {
+                      ...prevState,
+                      isFocus: false,
+                    };
+                  });
+                  hasAddedRootView.current = false;
+                  hasShownRootView.current = false;
+                  hasTriggeredFocus.current = false;
+                  setContextSearchQuery('');
+                },
+                centerDisplay,
+              });
+            });
+          }
+        }
+
+        if (isKeyboardFullyShown) {
+          ref_isFocus.current = state.isFocus;
+          if (isKeyboardFullyShown !== keyboardVisibleRef.current) {
+            keyboardVisibleRef.current = isKeyboardFullyShown;
+            // Ensure TextInput has correct focus when keyboard is fully shown
+            if (isKeyboardFullyShown && textInputRef.current) {
+              // Force ensure TextInput displays correct value
+              if (searchQueryRef.current) {
+                textInputRef.current.setNativeProps({ text: searchQueryRef.current });
+              }
+            }
+          }
+        }
+      }, [
+        isKeyboardFullyShown,
+        state.isFocus,
+        useTextInput,
+        forceRemoveAllRootViewOnItemSelected,
+        tag,
+        state.selectedItem,
+        popUpViewStyle,
+        data,
+        handleItemPress,
+        renderItem,
+        keyExtractor,
+        theme,
+        rootViewsRef,
+        fetchData,
+        localSearch,
+        pageSize,
+        handleDataUpdate,
+        selectedItemBackgroundColor,
+        removeRootView,
+        setContextSearchQuery,
+        addRootView,
+        centerDisplay,
+        setRootViewNativeStyle,
+      ]);
+
+      // Render the component following project implementation
+      return useMemo(() => {
+        return (
+          <CustomRow>
+            <View style={[styles.contain, style]} ref={refAutoPositionedPopup}>
+              {!state.isFocus || !useTextInput ? (
+                <TouchableOpacity
+                  style={[styles.AutoPositionedPopupBtn, AutoPositionedPopupBtnStyle]}
+                  disabled={AutoPositionedPopupBtnDisabled}
+                  onPress={handleButtonPress}
                 >
-                  {selectedItem?.title || placeholder}
-                </Text>
+                  {!btwChildren ? (
+                    <Text
+                      style={[
+                        styles.searchQueryTxt,
+                        state.selectedItem && { color: theme.colors.text },
+                        labelStyle,
+                      ]}
+                      numberOfLines={1}
+                      ellipsizeMode={'tail'}
+                    >
+                      {state.selectedItem?.title || placeholder}
+                    </Text>
+                  ) : (
+                    btwChildren()
+                  )}
+                </TouchableOpacity>
+              ) : (
+                useTextInput &&
+                state.isFocus && (
+                  <RNTextInput
+                    ref={textInputRef}
+                    key="fixed-textinput-key"
+                    style={[
+                      styles.inputStyle,
+                      {
+                        textAlignVertical: 'center',
+                        paddingVertical: 0,
+                        paddingHorizontal: 0,
+                      },
+                      inputStyle,
+                    ]}
+                    textAlign={TextInputProps['textAlign'] || 'left'}
+                    multiline={TextInputProps['multiline'] || false}
+                    numberOfLines={TextInputProps['numberOfLines'] || 1}
+                    placeholder={placeholder}
+                    placeholderTextColor={theme.colors.placeholderText}
+                    defaultValue={searchQueryRef.current}
+                    onChangeText={handleSearchChange}
+                    onSubmitEditing={(e: NativeSyntheticEvent<TextInputSubmitEditingEventData>) => {
+                      onSubmitEditing?.(e);
+                      Keyboard.dismiss();
+                    }}
+                    returnKeyType="done"
+                    {...TextInputProps}
+                  />
+                )
               )}
-            </TouchableOpacity>
-          </View>
-        </CustomRow>
-      );
+            </View>
+          </CustomRow>
+        );
+      }, [state.isFocus, useTextInput, AutoPositionedPopupBtnStyle, AutoPositionedPopupBtnDisabled, handleButtonPress, btwChildren, state.selectedItem, theme.colors.text, labelStyle, placeholder, textInputRef, inputStyle, TextInputProps, searchQueryRef, handleSearchChange, onSubmitEditing, style, refAutoPositionedPopup]);
     }
   )
 );
