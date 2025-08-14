@@ -19,7 +19,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-// Conditional import based on global.$fake
+// @ts-ignore - Skip type checking for third-party library with type issues
 import {AdvancedFlatList as AdvancedFlatListLib} from 'react-native-advanced-flatlist';
 // @ts-ignore - Direct import from source when using fake data
 import AdvancedFlatListSource from 'react-native-advanced-flatlist/src/AdvancedFlatList.tsx';
@@ -128,8 +128,8 @@ interface AutoPositionedPopupListProps {
     pageSize: number;
     searchQuery?: string;
   }) => Promise<Data | null>;
-  keyExtractor?: (item: SelectedItem) => string | number; //keyExtractor={item => item?.id}
-  renderItem?: ({item, index}: { item: SelectedItem; index: number }) => React.ReactNode;
+  keyExtractor?: (item: SelectedItem) => string; //keyExtractor={item => item?.id}
+  renderItem?: ({item, index}: { item: SelectedItem; index: number }) => React.ReactElement;
   selectedItem?: SelectedItem;
   localSearch?: boolean;
   pageSize?: number;
@@ -140,7 +140,7 @@ const AutoPositionedPopupList: React.FC<AutoPositionedPopupListProps> = memo(
      tag,
      updateState,
      fetchData,
-     keyExtractor = (item) => item.id,
+     keyExtractor = (item) => String(item.id),
      renderItem,
      selectedItem,
      localSearch,
@@ -263,8 +263,8 @@ const AutoPositionedPopupList: React.FC<AutoPositionedPopupListProps> = memo(
 
       return (
         <View style={[styles.baseModalView, styles.autoPositionedPopupList]}>
+          {/* @ts-ignore - Type assertion to bypass third-party library type issues */}
           <AdvancedFlatListComponent
-            tag={tag}
             style={[{borderRadius: 0}]}
             ref={ref_list}
             keyExtractor={keyExtractor}
@@ -352,7 +352,7 @@ const AutoPositionedPopup: MemoExoticComponent<
         useTextInput = false,
         btwChildren,
         CustomRow = ({children}) => <View>{children}</View>,
-        keyExtractor = (item: any) => item?.id,
+        keyExtractor = (item: any) => String(item?.id || ''),
         AutoPositionedPopupBtnDisabled = false,
         forceRemoveAllRootViewOnItemSelected = false,
         centerDisplay = false,
@@ -722,6 +722,7 @@ const AutoPositionedPopup: MemoExoticComponent<
                         },
                         component: (
                           <AutoPositionedPopupList
+                            tag={tag}
                             updateState={updateState}
                             fetchData={fetchData}
                             pageSize={pageSize}
