@@ -1,6 +1,6 @@
 {
   "name": "react-native-auto-positioned-popup",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A highly customizable React Native auto-positioned popup component with search functionality and flexible styling options",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -14,7 +14,7 @@
   "scripts": {
     "build": "npm run clean && tsc",
     "watch": "tsc --watch",
-    "clean": "rmdir /s /q lib 2>nul || rm -rf lib",
+    "clean": "rimraf lib",
     "prepare": "npm run build",
     "prepublishOnly": "npm run build && npm run lint",
     "postpublish": "echo \"Package published successfully! 🎉\"",
@@ -67,7 +67,9 @@
     "@typescript-eslint/parser": "^6.21.0",
     "eslint": "^8.57.1",
     "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-native": "^4.1.0",
+    "rimraf": "^6.0.1",
     "typescript": "^5.9.2"
   },
   "engines": {

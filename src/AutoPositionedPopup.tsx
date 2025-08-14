@@ -20,12 +20,12 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
-import { AdvancedFlatList } from 'react-native-advanced-flatlist';
-import { TextInputSubmitEditingEventData } from 'react-native/Libraries/Components/TextInput/TextInput';
-import { LayoutRectangle, NativeSyntheticEvent } from 'react-native/Libraries/Types/CoreEventTypes';
-import { AutoPositionedPopupProps, Data, SelectedItem } from './AutoPositionedPopupProps';
+import {AdvancedFlatList} from 'react-native-advanced-flatlist';
+import {TextInputSubmitEditingEventData} from 'react-native/Libraries/Components/TextInput/TextInput';
+import {LayoutRectangle, NativeSyntheticEvent} from 'react-native/Libraries/Types/CoreEventTypes';
+import {AutoPositionedPopupProps, Data, SelectedItem} from './AutoPositionedPopupProps';
 import styles from './AutoPositionedPopup.style';
-import { useRootView } from './RootViewContext';
+import {useRootView} from './RootViewContext';
 
 // Lightweight emitter to decouple TextInput and list without re-rendering context
 type QueryListener = (query: string) => void;
@@ -71,7 +71,7 @@ const ListItem: React.FC<{
   theme: Theme;
   rootViewsRef?: React.MutableRefObject<any[]>;
   selectedItemBackgroundColor?: string;
-}> = memo(({ item, index, selectedItem, onItemPress, theme, rootViewsRef, selectedItemBackgroundColor = 'rgba(116, 116, 128, 0.08)' }) => {
+}> = memo(({item, index, selectedItem, onItemPress, theme, rootViewsRef, selectedItemBackgroundColor = 'rgba(116, 116, 128, 0.08)'}) => {
   const isSelected = item.id === selectedItem?.id;
 
   return useMemo(() => (
@@ -93,7 +93,7 @@ const ListItem: React.FC<{
       }}
     >
       <Text
-        style={[styles.ListItemCode, { color: theme.colors.text }]}
+        style={[styles.ListItemCode, {color: theme.colors.text}]}
         numberOfLines={1}
         ellipsizeMode="tail"
       >
@@ -108,7 +108,7 @@ interface PopupListProps {
   data: SelectedItem[];
   selectedItem?: SelectedItem;
   onItemPress: (item: SelectedItem) => void;
-  renderItem?: ({ item, index }: { item: SelectedItem; index: number }) => React.ReactElement;
+  renderItem?: ({item, index}: { item: SelectedItem; index: number }) => React.ReactElement;
   keyExtractor?: (item: SelectedItem) => string;
   theme: Theme;
   rootViewsRef?: React.MutableRefObject<any[]>;
@@ -120,19 +120,19 @@ interface PopupListProps {
 }
 
 const PopupList: React.FC<PopupListProps> = memo(({
-  data,
-  selectedItem,
-  onItemPress,
-  renderItem,
-  keyExtractor = (item: SelectedItem) => String(item.id),
-  theme,
-  rootViewsRef,
-  fetchData,
-  localSearch = false,
-  pageSize = 20,
-  onDataUpdate,
-  selectedItemBackgroundColor,
-}) => {
+                                                    data,
+                                                    selectedItem,
+                                                    onItemPress,
+                                                    renderItem,
+                                                    keyExtractor = (item: SelectedItem) => String(item.id),
+                                                    theme,
+                                                    rootViewsRef,
+                                                    fetchData,
+                                                    localSearch = false,
+                                                    pageSize = 20,
+                                                    onDataUpdate,
+                                                    selectedItemBackgroundColor,
+                                                  }) => {
   const [internalData, setInternalData] = useState<SelectedItem[]>(data);
   const searchQueryRef = useRef<string>('');
 
@@ -175,7 +175,7 @@ const PopupList: React.FC<PopupListProps> = memo(({
     return unsubscribe;
   }, [fetchData, localSearch, pageSize, data, onDataUpdate]);
   const defaultRenderItem = useCallback(
-    ({ item, index }: { item: SelectedItem; index: number }) => (
+    ({item, index}: { item: SelectedItem; index: number }) => (
       <ListItem
         item={item}
         index={index}
@@ -190,7 +190,7 @@ const PopupList: React.FC<PopupListProps> = memo(({
   );
 
   return (
-    <View style={[styles.autoPositionedPopupList, { backgroundColor: theme.colors.background }]}>
+    <View style={[styles.autoPositionedPopupList, {backgroundColor: theme.colors.background}]}>
       <AdvancedFlatList
         data={internalData}
         keyExtractor={keyExtractor}
@@ -219,7 +219,7 @@ const AutoPositionedPopup: MemoExoticComponent<
         TextInputProps = {},
         inputStyle,
         labelStyle,
-        popUpViewStyle = { left: '5%', width: '90%' },
+        popUpViewStyle = {left: '5%', width: '90%'},
         fetchData,
         renderItem,
         onItemSelected,
@@ -228,7 +228,7 @@ const AutoPositionedPopup: MemoExoticComponent<
         selectedItem,
         useTextInput = false,
         btwChildren,
-        CustomRow = ({ children }) => <View>{children}</View>,
+        CustomRow = ({children}) => <View>{children}</View>,
         keyExtractor = (item: any) => item?.id,
         AutoPositionedPopupBtnDisabled = false,
         forceRemoveAllRootViewOnItemSelected = false,
@@ -237,7 +237,7 @@ const AutoPositionedPopup: MemoExoticComponent<
       } = props;
 
       // Use RootView context
-      const { addRootView, removeRootView, rootViews, searchQuery: contextSearchQuery, setSearchQuery: setContextSearchQuery } = useRootView();
+      const {addRootView, removeRootView, rootViews, searchQuery: contextSearchQuery, setSearchQuery: setContextSearchQuery} = useRootView();
       const rootViewsRef = useRef(rootViews);
 
       useEffect(() => {
@@ -252,7 +252,7 @@ const AutoPositionedPopup: MemoExoticComponent<
         top: number;
         left: number;
         width: number;
-      }>({ top: 0, left: 0, width: 0 });
+      }>({top: 0, left: 0, width: 0});
       const popupId = useRef(`popup-${tag}-${Date.now()}`);
 
       // Refs for performance optimization
@@ -334,7 +334,7 @@ const AutoPositionedPopup: MemoExoticComponent<
             popupWidth = screenWidth * widthPercent;
           }
 
-          setPopupPosition({ top, left, width: popupWidth });
+          setPopupPosition({top, left, width: popupWidth});
         });
       }, [popUpViewStyle]);
 
@@ -388,7 +388,7 @@ const AutoPositionedPopup: MemoExoticComponent<
                   backgroundColor: theme.colors.background,
                   borderRadius: 8,
                   shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 2 },
+                  shadowOffset: {width: 0, height: 2},
                   shadowOpacity: 0.25,
                   shadowRadius: 3.84,
                   elevation: 5,
@@ -509,7 +509,7 @@ const AutoPositionedPopup: MemoExoticComponent<
                 <Text
                   style={[
                     styles.searchQueryTxt,
-                    selectedItem && { color: theme.colors.text },
+                    selectedItem && {color: theme.colors.text},
                     labelStyle,
                   ]}
                   numberOfLines={1}
