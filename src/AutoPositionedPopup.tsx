@@ -209,17 +209,17 @@ const AutoPositionedPopupList: React.FC<AutoPositionedPopupListProps> = memo(
     };
     const _fetchData = async ({
                                 pageIndex,
-                                pageSize,
+                                pageSize: currentPageSize,
                               }: {
       pageIndex: number;
       pageSize: number;
     }): Promise<Data | null> => {
-      console.log('AutoPositionedPopupList _fetchData pageIndex=', pageIndex, ' pageSize=', pageSize);
+      console.log('AutoPositionedPopupList _fetchData pageIndex=', pageIndex, ' pageSize=', currentPageSize);
       console.log('AutoPositionedPopupList _fetchData state.localData=', state.localData);
       console.log('AutoPositionedPopupList _fetchData ref_searchQuery.current=', ref_searchQuery.current);
       console.log('AutoPositionedPopupList _fetchData localSearch=', localSearch);
       if (localSearch && state.localData.length > 0) {
-        let result: SelectedItem[] = state.localData.filter((item: SelectedItem) => {
+        const result: SelectedItem[] = state.localData.filter((item: SelectedItem) => {
           return item.title?.toLowerCase().includes(ref_searchQuery.current.toLowerCase());
         });
         console.log('AutoPositionedPopupList _fetchData localSearch result=', result);
@@ -246,6 +246,7 @@ const AutoPositionedPopupList: React.FC<AutoPositionedPopupListProps> = memo(
         }
         return Promise.resolve(res);
       } catch (e) {
+        console.warn('Error in fetchData:', e);
       }
       console.log('AutoPositionedPopupList _fetchData res=', null);
       return null;
@@ -326,7 +327,7 @@ const AutoPositionedPopup: MemoExoticComponent<
           pageSize: number;
           searchQuery?: string;
         }): Promise<Data | null> => {
-          let res = {
+          const res = {
             items: [] as any[],
             pageIndex,
             needLoadMore: false,
@@ -337,6 +338,7 @@ const AutoPositionedPopup: MemoExoticComponent<
             // res.items = res1
             // res.needLoadMore = res1.length === pageSize
           } catch (e) {
+            console.warn('Error in fetch operation:', e);
           }
           return res;
         },
