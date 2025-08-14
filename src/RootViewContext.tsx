@@ -34,7 +34,6 @@ export const RootViewProvider: React.FC<RootViewProviderProps> = ({ children }) 
   const [rootViews, setRootViews] = useState<DynamicViewBase[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const viewRefs = useRef<Record<string, View>>({});
-  //監聽 rootViews
   useEffect(() => {
     console.log('RootViewProvider rootViews changed:', rootViews);
   }, [rootViews]);

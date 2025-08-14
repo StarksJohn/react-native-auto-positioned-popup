@@ -1,6 +1,21 @@
-import { StyleSheet } from 'react-native';
+import {Platform, StyleSheet} from 'react-native';
 
 export default StyleSheet.create({
+  baseModalView: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 5,
+      },
+    }),
+  },
   des: {
     fontSize: 12,
     lineHeight: 20,
@@ -12,7 +27,7 @@ export default StyleSheet.create({
     fontSize: 15,
     lineHeight: 20,
     fontWeight: '600',
-    color: '#333333',
+    color: 'rgba(60, 60, 67, 0.6)',
   },
   commonModalRow: {
     height: 32,
@@ -36,6 +51,12 @@ export default StyleSheet.create({
     color: '#333333',
     width: '90%',
     textAlign: 'right',
+    flex: 1,
+    includeFontPadding: false,
+    backgroundColor: '#FFFFFF',
+    textAlignVertical: 'center',
+    paddingVertical: 0,
+    paddingHorizontal: 0,
   },
   AutoPositionedPopupBtn: {
     flex: 1,
