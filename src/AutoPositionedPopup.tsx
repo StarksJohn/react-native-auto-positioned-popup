@@ -232,7 +232,7 @@ const AutoPositionedPopupList: React.FC<AutoPositionedPopupListProps> = memo(
       try {
         const res: Data | null = await fetchData({
           pageIndex,
-          pageSize,
+          pageSize: pageSize || 10,
           searchQuery: ref_searchQuery.current,
         });
         console.log('AutoPositionedPopupList _fetchData res=', res);
