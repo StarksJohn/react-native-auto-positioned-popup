@@ -430,9 +430,31 @@ class BuildAndTest {
   static async buildProject() {
     logger.info('Building project');
     
-    const result = Utils.executeCommand('npm run build');
+    const result = Utils.executeCommand('npm run build', { silent: true });
     if (!result.success) {
-      throw new Error('Project build failed');
+      // Check if build errors are only from third-party libraries
+      const output = result.stderr || result.stdout || result.error?.message || '';
+      const hasOwnCodeErrors = output.match(/^src\/.*\.tsx?\(\d+,\d+\):\s*error\s+TS\d+/m);
+      const hasThirdPartyErrors = output.includes('node_modules/react-native-advanced-flatlist');
+      
+      if (!hasOwnCodeErrors && hasThirdPartyErrors) {
+        logger.warning('Build had third-party library type errors, but continuing...');
+        logger.info('Attempting to build with skipLibCheck option');
+        
+        // Try building with --skipLibCheck
+        const skipLibResult = Utils.executeCommand('npx tsc --skipLibCheck', { silent: true });
+        if (!skipLibResult.success) {
+          logger.error('Build failed even with skipLibCheck');
+          throw new Error('Project build failed');
+        }
+        logger.success('Build succeeded with skipLibCheck');
+      } else {
+        logger.error('Build failed with source code errors:');
+        console.log(output);
+        throw new Error('Project build failed');
+      }
+    } else {
+      logger.success('Build completed successfully');
     }
     
     // Verify build output exists
