@@ -370,28 +370,33 @@ class BuildAndTest {
     
     const result = Utils.executeCommand('npm run type-check', { silent: true });
     if (!result.success) {
-      // Check if errors are only from third-party libraries (node_modules) 
-      const output = result.stderr || result.stdout || result.error?.message || '';
-      const lines = output.split('\n');
+      // Get all possible error output
+      const errorOutput = result.error?.stdout || result.error?.stderr || result.stderr || result.stdout || result.error?.message || '';
       
-      // Check for source code errors (src/ directory)
-      const hasOwnCodeErrors = lines.some(line => 
-        line.match(/^src\/.*\.tsx?\(\d+,\d+\):\s*error\s+TS\d+/)
-      );
+      logger.info(`Debug - Error output length: ${errorOutput.length}`);
+      logger.info(`Debug - Has node_modules: ${errorOutput.includes('node_modules')}`);
+      logger.info(`Debug - Has advanced-flatlist: ${errorOutput.includes('react-native-advanced-flatlist')}`);
+      
+      // Check for source code errors (src/ directory) 
+      const hasOwnCodeErrors = errorOutput.includes('src/') && errorOutput.match(/src\/.*\.tsx?\(\d+,\d+\):/);
       
       // Check if we have third-party library errors
-      const hasThirdPartyErrors = output.includes('node_modules/react-native-advanced-flatlist');
+      const hasThirdPartyErrors = errorOutput.includes('node_modules/react-native-advanced-flatlist');
+      
+      logger.info(`Debug - Has own code errors: ${!!hasOwnCodeErrors}`);
+      logger.info(`Debug - Has third party errors: ${hasThirdPartyErrors}`);
       
       if (!hasOwnCodeErrors && hasThirdPartyErrors) {
         logger.warning('TypeScript found only third-party library type errors, our code is clean - proceeding');
-        logger.info('Third-party library errors detected but ignored for release');
+        logger.info('Continuing with release despite third-party library type issues');
       } else if (hasOwnCodeErrors) {
         logger.error('TypeScript found errors in our source code:');
-        console.log(output);
+        console.log(errorOutput);
         throw new Error('TypeScript type check failed - source code has type errors');
       } else {
-        logger.error('TypeScript type check failed with unexpected errors:');
-        console.log(output.substring(0, 2000));
+        logger.error('TypeScript type check failed. Full error output:');
+        console.log(errorOutput || 'No error output captured');
+        console.log('Result object:', JSON.stringify(result, null, 2));
         throw new Error('TypeScript type check failed');
       }
     } else {
