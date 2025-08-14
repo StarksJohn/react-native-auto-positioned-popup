@@ -41,7 +41,7 @@ This project includes a comprehensive automated release script that handles vers
 ### Quick Start
 
 #### Interactive Release (Recommended)
-
+use Private VPN
 ```bash
 npm run release
 ```
@@ -410,6 +410,97 @@ Solution: Update version number with `npm version patch`
 Error: Cannot find main entry point
 ```
 Solution: Run `npm run build` before publishing
+
+### Manual Push and Publish Methods
+
+When automated release encounters network issues or Git push failures, use these manual methods:
+
+#### Method 1: Manual Push with Git Bash
+
+```bash
+# 1. Push commits to remote repository
+git push origin main
+
+# 2. Push tags to remote repository
+git push origin v1.0.1
+
+# 3. Publish to NPM
+npm publish
+```
+
+#### Method 2: Using Proxy for Network Issues
+
+```bash
+# Set Git proxy (adjust to your proxy configuration)
+git config --global http.proxy http://127.0.0.1:7890
+git config --global https.proxy http://127.0.0.1:7890
+
+# Push changes
+git push origin main
+git push origin v1.0.1
+
+# Clear proxy configuration (after successful push)
+git config --global --unset http.proxy
+git config --global --unset https.proxy
+```
+
+#### Method 3: Using SSH Instead of HTTPS
+
+```bash
+# 1. Change remote URL to SSH
+git remote set-url origin git@github.com:StarksJohn/react-native-auto-positioned-popup.git
+
+# 2. Push changes
+git push origin main
+git push origin v1.0.1
+
+# 3. Publish to NPM
+npm publish
+```
+
+#### Method 4: Using Personal Access Token (PAT)
+
+```bash
+# 1. Create personal access token on GitHub
+# Settings -> Developer settings -> Personal access tokens -> Generate new token
+
+# 2. Push using token
+git push https://YOUR_GITHUB_TOKEN@github.com/StarksJohn/react-native-auto-positioned-popup.git main
+git push https://YOUR_GITHUB_TOKEN@github.com/StarksJohn/react-native-auto-positioned-popup.git v1.0.1
+```
+
+#### Manual Release Recovery
+
+If you need to rollback a failed release:
+
+```bash
+# Delete local tag
+git tag -d v1.0.1
+
+# Reset to previous commit
+git reset --hard HEAD~1
+
+# Restore version number in package.json
+# Edit package.json to revert version number
+```
+
+#### Manual Release Verification
+
+```bash
+# Check NPM publication status
+npm view react-native-auto-positioned-popup@1.0.1
+
+# Check GitHub repository
+git log origin/main --oneline -1
+```
+
+#### Important Notes for Manual Release
+
+- Ensure you're logged into NPM: `npm whoami`
+- If not logged in, use: `npm login`
+- Verify GitHub repository push permissions
+- Consider testing on a feature branch first
+- Always verify the release succeeded before closing terminal
 
 ### Getting Help
 

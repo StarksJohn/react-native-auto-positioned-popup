@@ -1,5 +1,5 @@
 import React, { ReactNode, createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, View, ViewStyle } from 'react-native';
+import { Pressable, View, ViewStyle,Keyboard } from 'react-native';
 
 interface DynamicViewBase {
   id: string;
@@ -59,9 +59,7 @@ export const RootViewProvider: React.FC<RootViewProviderProps> = ({ children }) 
     // Ensure keyboard is dismissed when force removing all root views
     if (force) {
       // Dismiss keyboard first
-      if ((global as any).dismissKeyboard) {
-        (global as any).dismissKeyboard();
-      }
+      Keyboard.dismiss();
 
       // Small delay to ensure keyboard is dismissed before removing views
       setTimeout(() => {

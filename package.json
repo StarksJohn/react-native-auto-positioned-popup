@@ -1,6 +1,6 @@
 {
   "name": "react-native-auto-positioned-popup",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "A highly customizable React Native auto-positioned popup component with search functionality and flexible styling options",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -47,13 +47,13 @@
   ],
   "author": "Stark <stark@example.com>",
   "license": "MIT",
-  "homepage": "https://github.com/your-username/react-native-auto-positioned-popup#readme",
+  "homepage": "https://github.com/StarksJohn/react-native-auto-positioned-popup#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/your-username/react-native-auto-positioned-popup.git"
+    "url": "git+https://github.com/StarksJohn/react-native-auto-positioned-popup.git"
   },
   "bugs": {
-    "url": "https://github.com/your-username/react-native-auto-positioned-popup/issues"
+    "url": "https://github.com/StarksJohn/react-native-auto-positioned-popup/issues"
   },
   "peerDependencies": {
     "react": ">=16.8.0",
