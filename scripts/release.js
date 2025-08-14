@@ -378,13 +378,18 @@ class BuildAndTest {
       logger.info(`Debug - Has advanced-flatlist: ${errorOutput.includes('react-native-advanced-flatlist')}`);
       
       // Check for source code errors (src/ directory) 
-      const hasOwnCodeErrors = errorOutput.includes('src/') && errorOutput.match(/src\/.*\.tsx?\(\d+,\d+\):/);
+      const ownCodeErrorPattern = /^src\/.*\.tsx?\(\d+,\d+\):\s*error/m;
+      const hasOwnCodeErrors = ownCodeErrorPattern.test(errorOutput);
       
       // Check if we have third-party library errors
       const hasThirdPartyErrors = errorOutput.includes('node_modules/react-native-advanced-flatlist');
       
-      logger.info(`Debug - Has own code errors: ${!!hasOwnCodeErrors}`);
+      logger.info(`Debug - Has own code errors: ${hasOwnCodeErrors}`);
       logger.info(`Debug - Has third party errors: ${hasThirdPartyErrors}`);
+      logger.info(`Debug - Sample error lines:`);
+      errorOutput.split('\n').slice(0, 5).forEach(line => {
+        if (line.includes('error')) logger.info(`  ${line}`);
+      });
       
       if (!hasOwnCodeErrors && hasThirdPartyErrors) {
         logger.warning('TypeScript found only third-party library type errors, our code is clean - proceeding');
