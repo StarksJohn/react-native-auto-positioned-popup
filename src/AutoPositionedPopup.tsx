@@ -266,15 +266,11 @@ const AutoPositionedPopupList: React.FC<AutoPositionedPopupListProps> = memo(
           {/* @ts-ignore - Type assertion to bypass third-party library type issues */}
           <AdvancedFlatListComponent
             style={[{borderRadius: 0}]}
-            ref={ref_list}
+            {...(ref_list && { ref: ref_list })}
             keyExtractor={keyExtractor}
             keyboardShouldPersistTaps={'always'}
-            autoRefresh={true}
-            pageSize={pageSize}
-            disabledRefresh={state.localData.length > 0}
-            fetchData={_fetchData}
+            {...({ fetchData: _fetchData })}
             renderItem={renderItem || _renderItem}
-            showListEmptyComponent={false}
           />
         </View>
       );

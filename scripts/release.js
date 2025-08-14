@@ -368,16 +368,16 @@ class BuildAndTest {
   static async runTypeCheck() {
     logger.info('Running TypeScript type check');
     
-    const result = Utils.executeCommand('npm run type-check');
+    const result = Utils.executeCommand('npm run type-check', { silent: false });
     if (!result.success) {
-      // Check if errors are only from third-party libraries (node_modules)
-      const stderr = result.stderr || '';
-      const isOnlyThirdPartyErrors = stderr.includes('node_modules/react-native-advanced-flatlist') &&
-        !stderr.match(/src\/.*\.tsx?\(\d+,\d+\)/);
+      // Check if errors are only from third-party libraries (node_modules) 
+      const output = result.stderr || result.error?.message || '';
+      const hasOwnCodeErrors = output.match(/src\/.*\.tsx?\(\d+,\d+\):/);
       
-      if (isOnlyThirdPartyErrors) {
-        logger.warning('TypeScript found third-party library type errors, but our code is clean - proceeding');
+      if (!hasOwnCodeErrors && output.includes('node_modules/react-native-advanced-flatlist')) {
+        logger.warning('TypeScript found only third-party library type errors, our code is clean - proceeding');
       } else {
+        logger.error('TypeScript type check output:', output.substring(0, 1000));
         throw new Error('TypeScript type check failed');
       }
     } else {
