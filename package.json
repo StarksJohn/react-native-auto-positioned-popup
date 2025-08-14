@@ -12,7 +12,7 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "npm run clean && tsc",
+    "build": "npm run clean && tsc -p tsconfig.build.json",
     "watch": "tsc --watch",
     "clean": "rimraf lib",
     "prepare": "npm run build",
