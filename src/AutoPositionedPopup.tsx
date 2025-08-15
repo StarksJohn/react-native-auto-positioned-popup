@@ -29,7 +29,6 @@ import {AutoPositionedPopupProps, Data, SelectedItem} from './AutoPositionedPopu
 import styles from './AutoPositionedPopup.style';
 import {useRootView} from './RootViewContext';
 import {useKeyboardStatus} from './KeyboardManager';
-import {useSafeAreaInsets} from "react-native-safe-area-context";
 
 // Lightweight emitter to decouple TextInput and list without re-rendering context
 type QueryListener = (query: string) => void;
@@ -365,7 +364,6 @@ const AutoPositionedPopup: MemoExoticComponent<
       });
       // Use RootView context
       const {addRootView, setRootViewNativeStyle, removeRootView, rootViews, setSearchQuery} = useRootView();
-      const insets = useSafeAreaInsets();
       const rootViewsRef = useRef(rootViews);
       // Track TextInput focus and RootView states like project implementation
       const hasTriggeredFocus = useRef(false);
@@ -518,12 +516,12 @@ const AutoPositionedPopup: MemoExoticComponent<
               console.log('AutoPositionedPopup screenHeight=', screenHeight, ' screenCenter=', screenCenter, ' componentY=', y);
 
               // Simple rule: if component Y > screen center, show popup above; otherwise show below
-              if (y+insets. top > screenCenter) {
+              if (y > screenCenter) {
                 console.log('AutoPositionedPopup: showing above (Y > center)');
                 ref_listPos.current = {x: x, y: y - listLayout.height, width: width};
               } else {
                 console.log('AutoPositionedPopup: showing below (Y <= center)');
-                ref_listPos.current = {x: x, y: y + height+insets.top, width: width};
+                ref_listPos.current = {x: x, y: y + height, width: width};
               }
               console.log('AutoPositionedPopup ref_listPos.current=', ref_listPos.current);
               if (CustomPopView && CustomPopViewStyle) {
@@ -625,8 +623,7 @@ const AutoPositionedPopup: MemoExoticComponent<
             }
           }
         }
-      }, [insets,
-        isKeyboardFullyShown,
+      }, [isKeyboardFullyShown,
         state.isFocus,
         useTextInput,
         CustomPopView,

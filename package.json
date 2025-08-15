@@ -77,7 +77,6 @@
   },
   "react-native": "lib/index.js",
   "dependencies": {
-    "react-native-advanced-flatlist": "^1.1.1",
-    "react-native-safe-area-context": "^5.6.0"
+    "react-native-advanced-flatlist": "^1.1.1"
   }
 }
