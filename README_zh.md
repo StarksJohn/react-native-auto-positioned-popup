@@ -148,12 +148,13 @@ const App = () => {
 ```tsx
 import React, { useState } from 'react';
 import { View } from 'react-native';
-import AutoPositionedPopup, { SelectedItem, Data } from 'react-native-auto-positioned-popup';
+import RNAutoPositionedPopup from 'react-native-auto-positioned-popup';
+import type {SelectedItem as RNSelectedItem, Data as AutoPositionedPopupData} from 'react-native-auto-positioned-popup';
 
 const MyComponent = () => {
-  const [selectedItem, setSelectedItem] = useState<SelectedItem | undefined>();
+  const [selectedItem, setSelectedItem] = useState<RNSelectedItem | undefined>();
 
-  const fetchData = async ({ pageIndex, pageSize, searchQuery }): Promise<Data | null> => {
+  const fetchData = async ({ pageIndex, pageSize, searchQuery }): Promise<AutoPositionedPopupData | null> => {
     // 你的数据获取逻辑
     return {
       items: [
@@ -168,7 +169,7 @@ const MyComponent = () => {
 
   return (
     <View style={{ padding: 20 }}>
-      <AutoPositionedPopup
+      <RNAutoPositionedPopup
         tag="example-popup"
         placeholder="请选择一个选项"
         selectedItem={selectedItem}
@@ -245,10 +246,11 @@ export default MyComponent;
 ```tsx
 import React, { useState } from 'react';
 import { View, Text, Image, StyleSheet } from 'react-native';
-import AutoPositionedPopup, { SelectedItem, Data, RootViewProvider } from 'react-native-auto-positioned-popup';
+import RNAutoPositionedPopup from 'react-native-auto-positioned-popup';
+import type {SelectedItem as RNSelectedItem, Data as AutoPositionedPopupData} from 'react-native-auto-positioned-popup';
 
 // 支持颜色的数据类型示例
-interface ClinicItem extends SelectedItem {
+interface ClinicItem extends RNSelectedItem {
   code: string;
   textColor: string;
   address?: string;
@@ -257,7 +259,7 @@ interface ClinicItem extends SelectedItem {
 const ClinicSelector = () => {
   const [selectedClinic, setSelectedClinic] = useState<ClinicItem | null>(null);
 
-  const fetchClinics = async ({ pageIndex, pageSize }): Promise<Data | null> => {
+  const fetchClinics = async ({ pageIndex, pageSize }): Promise<AutoPositionedPopupData | null> => {
     // 模拟 API 调用
     const mockClinics = [
       { id: '1', title: '主诊所', code: 'MC001', textColor: '#4CAF50', address: '主街123号' },
@@ -278,7 +280,7 @@ const ClinicSelector = () => {
   return (
     <RootViewProvider>
       <View style={styles.container}>
-        <AutoPositionedPopup
+        <RNAutoPositionedPopup
           tag="clinic-selector"
           useTextInput={false}
           localSearch={false}

@@ -148,12 +148,13 @@ Then use the `AutoPositionedPopup` component:
 ```tsx
 import React, { useState } from 'react';
 import { View } from 'react-native';
-import AutoPositionedPopup, { SelectedItem, Data } from 'react-native-auto-positioned-popup';
+import RNAutoPositionedPopup from 'react-native-auto-positioned-popup';
+import type {SelectedItem as RNSelectedItem, Data as AutoPositionedPopupData} from 'react-native-auto-positioned-popup';
 
 const MyComponent = () => {
-  const [selectedItem, setSelectedItem] = useState<SelectedItem | undefined>();
+  const [selectedItem, setSelectedItem] = useState<RNSelectedItem | undefined>();
 
-  const fetchData = async ({ pageIndex, pageSize, searchQuery }): Promise<Data | null> => {
+  const fetchData = async ({ pageIndex, pageSize, searchQuery }): Promise<AutoPositionedPopupData | null> => {
     // Your data fetching logic here
     return {
       items: [
@@ -168,7 +169,7 @@ const MyComponent = () => {
 
   return (
     <View style={{ padding: 20 }}>
-      <AutoPositionedPopup
+      <RNAutoPositionedPopup
         tag="example-popup"
         placeholder="Select an option"
         selectedItem={selectedItem}
@@ -245,10 +246,11 @@ This example shows a complete implementation without search input, suitable for 
 ```tsx
 import React, { useState } from 'react';
 import { View, Text, Image, StyleSheet } from 'react-native';
-import AutoPositionedPopup, { SelectedItem, Data, RootViewProvider } from 'react-native-auto-positioned-popup';
+import RNAutoPositionedPopup, { RootViewProvider } from 'react-native-auto-positioned-popup';
+import type {SelectedItem as RNSelectedItem, Data as AutoPositionedPopupData} from 'react-native-auto-positioned-popup';
 
 // Sample data type with color support
-interface ClinicItem extends SelectedItem {
+interface ClinicItem extends RNSelectedItem {
   code: string;
   textColor: string;
   address?: string;
@@ -257,7 +259,7 @@ interface ClinicItem extends SelectedItem {
 const ClinicSelector = () => {
   const [selectedClinic, setSelectedClinic] = useState<ClinicItem | null>(null);
 
-  const fetchClinics = async ({ pageIndex, pageSize }): Promise<Data | null> => {
+  const fetchClinics = async ({ pageIndex, pageSize }): Promise<AutoPositionedPopupData | null> => {
     // Simulate API call
     const mockClinics = [
       { id: '1', title: 'Main Clinic', code: 'MC001', textColor: '#4CAF50', address: '123 Main St' },
@@ -278,7 +280,7 @@ const ClinicSelector = () => {
   return (
     <RootViewProvider>
       <View style={styles.container}>
-        <AutoPositionedPopup
+        <RNAutoPositionedPopup
           tag="clinic-selector"
           useTextInput={false}
           localSearch={false}

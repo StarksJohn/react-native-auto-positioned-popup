@@ -14,6 +14,8 @@ import React, {
 import {
   Dimensions,
   Keyboard,
+  Platform,
+  StatusBar,
   Text,
   TextInput as RNTextInput,
   TouchableOpacity,
@@ -271,6 +273,7 @@ const AutoPositionedPopupList: React.FC<AutoPositionedPopupListProps> = memo(
             keyboardShouldPersistTaps={'always'}
             fetchData={_fetchData}
             renderItem={renderItem ? ({item, index}) => renderItem({item: item as SelectedItem, index}) : ({item, index}) => _renderItem({item: item as SelectedItem, index})}
+            showListEmptyComponent={false}
           />
         </View>
       );
@@ -509,11 +512,27 @@ const AutoPositionedPopup = memo(
             refAutoPositionedPopup.current?.measureInWindow((x: number, y: number, width: number, height: number) => {
               console.log('AutoPositionedPopup measureInWindow x=', x, ' y=', y, ' width=', width, ' height=', height);
 
-              // INTELLIGENT POSITION CALCULATION
+              // INTELLIGENT POSITION CALCULATION - MODIFIED VERSION WITH STATUS BAR SAFETY
               const calculateOptimalPosition = (componentY: number, componentHeight: number, popupHeight: number) => {
+                console.log('🔥🔥🔥 NEW CALCULATE OPTIMAL POSITION FUNCTION EXECUTING 🔥🔥🔥');
+
                 // Use window height (visible area) instead of screen height (includes status bar)
                 const windowHeight = Dimensions.get('window').height;
                 const visibleAreaCenter = windowHeight / 2;
+
+                // Cross-platform status bar height handling
+                const getStatusBarHeight = () => {
+                  if (Platform.OS === 'android') {
+                    return StatusBar.currentHeight || 24; // Android default
+                  } else {
+                    // iOS status bar heights vary by device
+                    const {height: screenHeight} = Dimensions.get('screen');
+                    const {height: windowHeightLocal} = Dimensions.get('window');
+                    return screenHeight - windowHeightLocal; // Safe area top
+                  }
+                };
+                const statusBarHeight = getStatusBarHeight();
+                console.log('🔥 Cross-platform StatusBar height:', statusBarHeight, 'Platform:', Platform.OS);
 
                 // Calculate component center point as requested
                 const componentCenterY = componentY + componentHeight / 2;
@@ -524,80 +543,186 @@ const AutoPositionedPopup = memo(
                   componentCenterY,
                   componentY,
                   componentHeight,
-                  popupHeight
+                  popupHeight,
+                  statusBarHeight
                 });
 
                 let showAbove = false;
-                let finalY = componentY + componentHeight; // Default: show below
+                let finalY = componentY + componentHeight; // Default fallback: show below
 
-                // Primary logic: use component center point vs visible area center
-                if (componentCenterY > visibleAreaCenter) {
-                  // Component center is in lower half, prefer showing above
-                  const spaceAbove = componentY;
-                  if (spaceAbove >= popupHeight) {
-                    showAbove = true;
-                    finalY = componentY - popupHeight;
-                  } else {
-                    // Not enough space above, check if we can fit below
-                    const spaceBelow = windowHeight - (componentY + componentHeight);
-                    if (spaceBelow >= popupHeight) {
-                      // Show below if there's space
-                      finalY = componentY + componentHeight;
-                    } else {
-                      // Force above with clipping
-                      showAbove = true;
-                      finalY = Math.max(0, componentY - popupHeight);
-                    }
-                  }
+                // CORRECTED LOGIC: Calculate actual usable space considering status bar
+                const rawSpaceAbove = componentY;
+                const spaceBelow = windowHeight - (componentY + componentHeight);
+                // Actual usable space above must account for status bar
+                const usableSpaceAbove = componentY - statusBarHeight;
+
+                console.log('🔥 AutoPositionedPopup CORRECTED SPACE CALCULATION (pre-spacing):', {
+                  rawSpaceAbove,
+                  usableSpaceAbove,
+                  spaceBelow,
+                  popupHeight,
+                  componentY,
+                  componentHeight,
+                  windowHeight,
+                  statusBarHeight
+                });
+
+                // ULTRA-TIGHT SPACING: Minimal spacing for tight visual connection
+                const getOptimalSpacing = (compY: number, compHeight: number, winHeight: number) => {
+                  const componentCenter = compY + compHeight / 2;
+                  const screenCenter = winHeight / 2;
+                  const distanceFromCenter = Math.abs(componentCenter - screenCenter) / screenCenter;
+
+                  // Check if component is in bottom half for ultra-tight spacing
+                  const isInBottomHalf = componentCenter > screenCenter;
+
+                  // Base spacing: extremely small for bottom components
+                  const baseSpacing = isInBottomHalf ? 0.5 : 3;
+
+                  // Aggressive spacing reduction for edge positions - ultra tight for bottom half
+                  const edgeProximityFactor = isInBottomHalf ?
+                    Math.max(0.15, 1 - distanceFromCenter * 1.2) :
+                    Math.max(0.4, 1 - distanceFromCenter * 0.7);
+
+                  // Minimal component-relative spacing for bottom components
+                  const relativeSpacingPercent = isInBottomHalf ? 0.02 : 0.12;
+                  const relativeSpacing = Math.min(compHeight * relativeSpacingPercent, isInBottomHalf ? 3 : 10);
+
+                  // Strong platform adjustment - much smaller for Android bottom components
+                  const platformMultiplier = Platform.OS === 'ios' ? 1.0 : (isInBottomHalf ? 0.5 : 0.9);
+
+                  const finalSpacing = Math.max(baseSpacing, relativeSpacing) * edgeProximityFactor * platformMultiplier;
+
+                  console.log('🔥 Advanced spacing calculation:', {
+                    componentCenter,
+                    screenCenter,
+                    distanceFromCenter,
+                    isInBottomHalf,
+                    edgeProximityFactor,
+                    baseSpacing,
+                    relativeSpacing,
+                    relativeSpacingPercent,
+                    platformMultiplier,
+                    finalSpacing
+                  });
+
+                  return finalSpacing;
+                };
+                // const POPUP_SPACING = getOptimalSpacing(componentY, componentHeight, windowHeight);
+                // console.log('🔥 Optimal popup spacing calculated:', POPUP_SPACING, 'for componentHeight:', componentHeight, 'at Y:', componentY);
+
+                // console.log('🔥 AutoPositionedPopup FINAL SPACE CHECK WITH SPACING:', {
+                //   POPUP_SPACING,
+                //   'usableSpaceAbove >= popupHeight + POPUP_SPACING': usableSpaceAbove >= popupHeight + POPUP_SPACING,
+                //   'spaceBelow >= popupHeight + POPUP_SPACING': spaceBelow >= popupHeight + POPUP_SPACING,
+                //   'usableSpaceAbove needed': popupHeight + POPUP_SPACING,
+                //   'spaceBelow needed': popupHeight + POPUP_SPACING
+                // });
+
+                // FORCE ABOVE PRIORITY: If component is in bottom half, always try above first
+                const isInBottomHalf = componentCenterY > visibleAreaCenter;
+
+                // console.log('🔥 Position decision factors:', {
+                //   isInBottomHalf,
+                //   componentCenterY,
+                //   visibleAreaCenter,
+                //   'spaceBelow >= needed': spaceBelow >= popupHeight + POPUP_SPACING,
+                //   'usableSpaceAbove >= needed': usableSpaceAbove >= popupHeight + POPUP_SPACING
+                // });
+
+                if (isInBottomHalf && usableSpaceAbove >= popupHeight ) {
+                  // Component in bottom half + enough space above = FORCE ABOVE
+                  showAbove = true;
+                  finalY = componentY - popupHeight +componentHeight/2;
+                  console.log('🔥 AutoPositionedPopup: FORCE ABOVE - bottom half component with enough space, finalY=', finalY);
+                } else if (!isInBottomHalf && spaceBelow >= popupHeight ) {
+                  // Component in top half + enough space below = show below
+                  showAbove = false;
+                  finalY = componentY + componentHeight*2;
+                  console.log('🔥 AutoPositionedPopup: Showing below - top half component with enough space, finalY=', finalY);
+                } else if (usableSpaceAbove >= popupHeight ) {
+                  // Fallback: enough space above
+                  showAbove = true;
+                  finalY = componentY - popupHeight ;
+                  console.log('🔥 AutoPositionedPopup: Showing above - enough space available (fallback), finalY=', finalY);
+                } else if (spaceBelow >= popupHeight ) {
+                  // Fallback: enough space below
+                  showAbove = false;
+                  finalY = componentY + componentHeight ;
+                  console.log('🔥 AutoPositionedPopup: Showing below - enough space available (fallback), finalY=', finalY);
                 } else {
-                  // Component center is in upper half, prefer showing below
-                  const spaceBelow = windowHeight - (componentY + componentHeight);
-                  if (spaceBelow >= popupHeight) {
-                    // Show below
-                    finalY = componentY + componentHeight;
+                  // Emergency fallback: choose larger space
+                  if (usableSpaceAbove >= spaceBelow) {
+                    showAbove = true;
+                    finalY = Math.max(statusBarHeight, componentY - popupHeight );
+                    console.log('🔥 AutoPositionedPopup: Emergency above - larger space, finalY=', finalY);
                   } else {
-                    // Not enough space below, try above
-                    const spaceAbove = componentY;
-                    if (spaceAbove >= popupHeight) {
-                      showAbove = true;
-                      finalY = componentY - popupHeight;
-                    } else {
-                      // Force below with clipping
-                      finalY = Math.min(windowHeight - popupHeight, componentY + componentHeight);
-                    }
+                    showAbove = false;
+                    finalY = componentY + componentHeight ;
+                    console.log('🔥 AutoPositionedPopup: Emergency below - larger space, finalY=', finalY);
                   }
                 }
 
-                // Final boundary check to ensure popup stays within visible area
-                if (finalY < 0) {
-                  finalY = 0;
+                // Enhanced boundary check with detailed logging
+                console.log('🔥 Pre-boundary check:', {
+                  originalFinalY: finalY,
+                  showAbove,
+                  statusBarHeight,
+                  windowHeight,
+                  popupHeight,
+                  'finalY < statusBarHeight': finalY < statusBarHeight,
+                  'finalY + popupHeight > windowHeight': finalY + popupHeight > windowHeight
+                });
+
+                if (showAbove && finalY < statusBarHeight) {
+                  const oldFinalY = finalY;
+                  finalY = statusBarHeight;
+                  console.log('🔥 BOUNDARY FIX: Above display adjusted for status bar:', oldFinalY, '->', finalY);
                 }
-                if (finalY + popupHeight > windowHeight) {
+
+                if (!showAbove && finalY + popupHeight > windowHeight) {
+                  const oldFinalY = finalY;
                   finalY = windowHeight - popupHeight;
+                  console.log('🔥 BOUNDARY FIX: Below display adjusted to fit window:', oldFinalY, '->', finalY);
                 }
+
+                // CRITICAL CHECK: Detect if boundary check is changing display direction
+                if (showAbove && finalY + popupHeight > componentY ) {
+                  console.log('🚨 WARNING: Above positioning may overlap with component!');
+                }
+
+                if (!showAbove && finalY < componentY + componentHeight ) {
+                  console.log('🚨 WARNING: Below positioning may overlap with component!');
+                }
+
+                console.log('🔥 Post-boundary check final result:', {
+                  finalY,
+                  showAbove,
+                  'popupTop': finalY,
+                  'popupBottom': finalY + popupHeight,
+                  'componentTop': componentY,
+                  'componentBottom': componentY + componentHeight
+                });
 
                 return {finalY, showAbove};
               };
 
-              const positionResult = calculateOptimalPosition(y, height, listLayout.height);
-              console.log('AutoPositionedPopup position result:', positionResult);
+              // Calculate position ONCE based on actual popup height
+              const actualPopupHeight = CustomPopView && CustomPopViewStyle && typeof CustomPopViewStyle.height === 'number'
+                ? CustomPopViewStyle.height
+                : listLayout.height;
+
+              console.log('🔥 Using actualPopupHeight for calculation:', actualPopupHeight, 'CustomPopView:', !!CustomPopView);
+
+              const positionResult = calculateOptimalPosition(y, height, actualPopupHeight);
+              console.log('AutoPositionedPopup FINAL position result:', positionResult);
 
               ref_listPos.current = {x: x, y: positionResult.finalY, width: width};
               console.log('AutoPositionedPopup ref_listPos.current=', ref_listPos.current);
+
               if (CustomPopView && CustomPopViewStyle) {
                 console.log('AutoPositionedPopup CustomPopViewStyle=', CustomPopViewStyle);
-                // Ensure CustomPopViewStyle.height is a number before using it in calculations
-                const customHeight =
-                  typeof CustomPopViewStyle.height === 'number' ? CustomPopViewStyle.height : listLayout.height;
-
-                // Apply same intelligent positioning strategy for CustomPopView
-                console.log('AutoPositionedPopup CustomPopView using intelligent positioning, customHeight=', customHeight);
-
-                // Use the same intelligent positioning function for CustomPopView
-                const customPositionResult = calculateOptimalPosition(y, height, customHeight);
-                console.log('AutoPositionedPopup CustomPopView position result:', customPositionResult, 'tag=', tag);
-
-                ref_listPos.current = {x: x, y: customPositionResult.finalY, width: width};
+                // Position already calculated correctly above, no need to recalculate
                 const PopViewComponent = CustomPopView();
                 console.log('AutoPositionedPopup addRootView PopViewComponent=', PopViewComponent);
                 console.log('AutoPositionedPopup addRootView state.selectedItem=', state.selectedItem);
