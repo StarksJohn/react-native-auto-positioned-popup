@@ -631,9 +631,14 @@ class VersionManager {
     
     logger.info(`Version change: ${currentVersion} → ${newVersion}`);
     
-    const confirmed = await Utils.confirmAction(`Confirm version update to ${newVersion}?`);
-    if (!confirmed) {
-      throw new Error('Version update cancelled by user');
+    // Skip confirmation if version type was specified via command line
+    if (config.versionType) {
+      logger.info(`Auto-confirming version update to ${newVersion} (version type specified via command line)`);
+    } else {
+      const confirmed = await Utils.confirmAction(`Confirm version update to ${newVersion}?`);
+      if (!confirmed) {
+        throw new Error('Version update cancelled by user');
+      }
     }
     
     Utils.updatePackageVersion(newVersion);
