@@ -19,10 +19,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-// @ts-ignore - Skip type checking for third-party library with type issues
-import {AdvancedFlatList as AdvancedFlatListLib} from 'react-native-advanced-flatlist';
-// @ts-ignore - Direct import from source when using fake data
-import AdvancedFlatListSource from 'react-native-advanced-flatlist';
+import {AdvancedFlatList, ListData, FetchDataParams} from 'react-native-advanced-flatlist';
 import {TextInputSubmitEditingEventData} from 'react-native/Libraries/Components/TextInput/TextInput';
 import {LayoutRectangle, NativeSyntheticEvent} from 'react-native/Libraries/Types/CoreEventTypes';
 import {AutoPositionedPopupProps, Data, SelectedItem} from './AutoPositionedPopupProps';
@@ -209,10 +206,7 @@ const AutoPositionedPopupList: React.FC<AutoPositionedPopupListProps> = memo(
     const _fetchData = async ({
                                 pageIndex,
                                 pageSize: currentPageSize,
-                              }: {
-      pageIndex: number;
-      pageSize: number;
-    }): Promise<Data | null> => {
+                              }: FetchDataParams): Promise<ListData | null> => {
       console.log('AutoPositionedPopupList _fetchData pageIndex=', pageIndex, ' pageSize=', currentPageSize);
       console.log('AutoPositionedPopupList _fetchData state.localData=', state.localData);
       console.log('AutoPositionedPopupList _fetchData ref_searchQuery.current=', ref_searchQuery.current);
@@ -243,7 +237,15 @@ const AutoPositionedPopupList: React.FC<AutoPositionedPopupListProps> = memo(
             };
           });
         }
-        return Promise.resolve(res);
+        // Convert Data to ListData if needed
+        if (res) {
+          return Promise.resolve({
+            items: res.items as any[], // Convert to ListItem array
+            pageIndex: res.pageIndex,
+            needLoadMore: res.needLoadMore,
+          });
+        }
+        return null;
       } catch (e) {
         console.warn('Error in fetchData:', e);
       }
@@ -258,19 +260,17 @@ const AutoPositionedPopupList: React.FC<AutoPositionedPopupListProps> = memo(
     );
     return useMemo(() => {
       console.log('AutoPositionedPopupList (global as any)?.$fake=', (global as any)?.$fake);
-      // Choose AdvancedFlatList version based on global.$fake
-      const AdvancedFlatListComponent = (global as any)?.$fake ? AdvancedFlatListSource : AdvancedFlatListLib;
-
+      // Babel configuration handles the path redirection based on global.$fake
+      // No need for conditional import here
       return (
         <View style={[styles.baseModalView, styles.autoPositionedPopupList]}>
-          {/* @ts-ignore - Type assertion to bypass third-party library type issues */}
-          <AdvancedFlatListComponent
+          <AdvancedFlatList
             style={[{borderRadius: 0}]}
-            {...(ref_list && { ref: ref_list })}
-            keyExtractor={keyExtractor}
+            {...(ref_list && {ref: ref_list})}
+            keyExtractor={(item, index) => keyExtractor ? keyExtractor(item as SelectedItem) : (item as SelectedItem).id}
             keyboardShouldPersistTaps={'always'}
-            {...({ fetchData: _fetchData })}
-            renderItem={renderItem || _renderItem}
+            fetchData={_fetchData}
+            renderItem={renderItem ? ({item, index}) => renderItem({item: item as SelectedItem, index}) : ({item, index}) => _renderItem({item: item as SelectedItem, index})}
           />
         </View>
       );
@@ -301,9 +301,7 @@ const listLayout = {
 };
 
 // Main AutoPositionedPopup component
-const AutoPositionedPopup: MemoExoticComponent<
-  ForwardRefExoticComponent<AutoPositionedPopupProps>
-> = memo(
+const AutoPositionedPopup = memo(
   forwardRef<unknown, AutoPositionedPopupProps>(
     (props: AutoPositionedPopupProps, parentRef: ForwardedRef<unknown>): React.JSX.Element => {
       console.log('AutoPositionedPopup props=', props);
@@ -370,9 +368,9 @@ const AutoPositionedPopup: MemoExoticComponent<
       const hasAddedRootView = useRef(false);
       const hasShownRootView = useRef(false);
       // Additional refs for keyboard and position tracking
-      const ref_isFocus = useRef<boolean>();
-      const ref_isKeyboardFullyShown = useRef<boolean>();
-      const ref_listPos: MutableRefObject<any> = useRef<LayoutRectangle>()
+      const ref_isFocus = useRef<boolean>(false);
+      const ref_isKeyboardFullyShown = useRef<boolean>(false);
+      const ref_listPos: MutableRefObject<any> = useRef<LayoutRectangle | undefined>(undefined)
       const keyboardVisibleRef = useRef(false);
       const refAutoPositionedPopup = useRef<View>(null);
       const ref_searchQuery = useRef<string>('');
@@ -510,16 +508,16 @@ const AutoPositionedPopup: MemoExoticComponent<
           if (state.isFocus) {
             refAutoPositionedPopup.current?.measureInWindow((x: number, y: number, width: number, height: number) => {
               console.log('AutoPositionedPopup measureInWindow x=', x, ' y=', y, ' width=', width, ' height=', height);
-              
+
               // INTELLIGENT POSITION CALCULATION
               const calculateOptimalPosition = (componentY: number, componentHeight: number, popupHeight: number) => {
                 // Use window height (visible area) instead of screen height (includes status bar)
                 const windowHeight = Dimensions.get('window').height;
                 const visibleAreaCenter = windowHeight / 2;
-                
+
                 // Calculate component center point as requested
                 const componentCenterY = componentY + componentHeight / 2;
-                
+
                 console.log('AutoPositionedPopup positioning data:', {
                   windowHeight,
                   visibleAreaCenter,
@@ -528,10 +526,10 @@ const AutoPositionedPopup: MemoExoticComponent<
                   componentHeight,
                   popupHeight
                 });
-                
+
                 let showAbove = false;
                 let finalY = componentY + componentHeight; // Default: show below
-                
+
                 // Primary logic: use component center point vs visible area center
                 if (componentCenterY > visibleAreaCenter) {
                   // Component center is in lower half, prefer showing above
@@ -569,7 +567,7 @@ const AutoPositionedPopup: MemoExoticComponent<
                     }
                   }
                 }
-                
+
                 // Final boundary check to ensure popup stays within visible area
                 if (finalY < 0) {
                   finalY = 0;
@@ -577,13 +575,13 @@ const AutoPositionedPopup: MemoExoticComponent<
                 if (finalY + popupHeight > windowHeight) {
                   finalY = windowHeight - popupHeight;
                 }
-                
-                return { finalY, showAbove };
+
+                return {finalY, showAbove};
               };
-              
+
               const positionResult = calculateOptimalPosition(y, height, listLayout.height);
               console.log('AutoPositionedPopup position result:', positionResult);
-              
+
               ref_listPos.current = {x: x, y: positionResult.finalY, width: width};
               console.log('AutoPositionedPopup ref_listPos.current=', ref_listPos.current);
               if (CustomPopView && CustomPopViewStyle) {
@@ -598,7 +596,7 @@ const AutoPositionedPopup: MemoExoticComponent<
                 // Use the same intelligent positioning function for CustomPopView
                 const customPositionResult = calculateOptimalPosition(y, height, customHeight);
                 console.log('AutoPositionedPopup CustomPopView position result:', customPositionResult, 'tag=', tag);
-                
+
                 ref_listPos.current = {x: x, y: customPositionResult.finalY, width: width};
                 const PopViewComponent = CustomPopView();
                 console.log('AutoPositionedPopup addRootView PopViewComponent=', PopViewComponent);
@@ -672,7 +670,7 @@ const AutoPositionedPopup: MemoExoticComponent<
           }
         }
         if (isKeyboardFullyShown) {
-          ref_isFocus.current = state.isFocus;
+          ref_isFocus.current = state.isFocus ?? false;
           if (isKeyboardFullyShown !== keyboardVisibleRef.current) {
             keyboardVisibleRef.current = isKeyboardFullyShown;
             if (isKeyboardFullyShown && textInputRef.current) {

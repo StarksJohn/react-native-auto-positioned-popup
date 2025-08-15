@@ -26,6 +26,107 @@ or
 yarn add react-native-auto-positioned-popup
 ```
 
+## Loading Source Code in Development
+
+If you need to debug or develop with the source code directly instead of the compiled library files, you can configure your project to load the TypeScript source files. This is useful for debugging or when you need to make temporary modifications.
+
+### Configure Babel to Load Source Files
+
+1. Install the babel module resolver plugin if you haven't already:
+
+```bash
+npm install --save-dev babel-plugin-module-resolver
+```
+
+2. Update your `babel.config.js` to redirect imports from the compiled lib files to the source files:
+
+```javascript
+module.exports = {
+  presets: ['module:@react-native/babel-preset'],
+  plugins: [
+    [
+      require.resolve('babel-plugin-module-resolver'),
+      {
+        root: ['.', './src'],
+        extensions: ['.js', '.jsx', '.ts', '.tsx', '.json'],
+        alias: {
+          // Redirect react-native-auto-positioned-popup to source files
+          'react-native-auto-positioned-popup': './node_modules/react-native-auto-positioned-popup/src',
+          'react-native-auto-positioned-popup/lib/index': './node_modules/react-native-auto-positioned-popup/src/index.ts',
+          'react-native-auto-positioned-popup/lib/AutoPositionedPopup': './node_modules/react-native-auto-positioned-popup/src/AutoPositionedPopup.tsx',
+          'react-native-auto-positioned-popup/lib/AutoPositionedPopupProps': './node_modules/react-native-auto-positioned-popup/src/AutoPositionedPopupProps.ts',
+          'react-native-auto-positioned-popup/lib/RootViewContext': './node_modules/react-native-auto-positioned-popup/src/RootViewContext.tsx',
+          'react-native-auto-positioned-popup/lib/KeyboardManager': './node_modules/react-native-auto-positioned-popup/src/KeyboardManager.tsx',
+          'react-native-auto-positioned-popup/lib/AutoPositionedPopup.style': './node_modules/react-native-auto-positioned-popup/src/AutoPositionedPopup.style.ts',
+          // If you also use react-native-advanced-flatlist
+          'react-native-advanced-flatlist': './node_modules/react-native-advanced-flatlist/src',
+          'react-native-advanced-flatlist/lib/index': './node_modules/react-native-advanced-flatlist/src/index.ts',
+          'react-native-advanced-flatlist/lib/AdvancedFlatList': './node_modules/react-native-advanced-flatlist/src/AdvancedFlatList.tsx',
+        },
+      },
+    ],
+    // ... other plugins
+  ],
+};
+```
+
+3. Clear the Metro bundler cache and restart:
+
+```bash
+npx react-native start --reset-cache
+```
+
+### Conditional Loading (Advanced)
+
+If you want to conditionally load source files only in certain environments (e.g., during development), you can add logic to your babel config:
+
+```javascript
+const isDevelopment = process.env.NODE_ENV === 'development';
+const useSourceFiles = process.env.USE_SOURCE_FILES === 'true';
+
+const aliasConfig = (isDevelopment || useSourceFiles) ? {
+  // ... your source file aliases
+} : {
+  // ... your production aliases
+};
+
+module.exports = {
+  presets: ['module:@react-native/babel-preset'],
+  plugins: [
+    [
+      require.resolve('babel-plugin-module-resolver'),
+      {
+        root: ['.', './src'],
+        extensions: ['.js', '.jsx', '.ts', '.tsx', '.json'],
+        alias: aliasConfig,
+      },
+    ],
+  ],
+};
+```
+
+### TypeScript Configuration
+
+When loading source files directly, ensure your `tsconfig.json` includes the necessary paths:
+
+```json
+{
+  "compilerOptions": {
+    "paths": {
+      "react-native-auto-positioned-popup": ["./node_modules/react-native-auto-positioned-popup/src"],
+      "react-native-auto-positioned-popup/*": ["./node_modules/react-native-auto-positioned-popup/src/*"]
+    }
+  }
+}
+```
+
+### Notes
+
+- Loading source files directly may impact build performance
+- Remember to revert these changes before building for production
+- Always clear Metro cache after changing babel configuration
+- This approach is recommended only for development and debugging purposes
+
 ## Basic Usage
 
 First, wrap your app with the `RootViewProvider`:

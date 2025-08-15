@@ -26,6 +26,107 @@ npm install react-native-auto-positioned-popup
 yarn add react-native-auto-positioned-popup
 ```
 
+## 在开发环境中加载源码
+
+如果你需要调试或直接使用源代码进行开发，而不是使用编译后的库文件，可以配置你的项目来加载 TypeScript 源文件。这在调试或需要临时修改时非常有用。
+
+### 配置 Babel 加载源文件
+
+1. 如果还没有安装，请先安装 babel 模块解析器插件：
+
+```bash
+npm install --save-dev babel-plugin-module-resolver
+```
+
+2. 更新你的 `babel.config.js`，将导入从编译的 lib 文件重定向到源文件：
+
+```javascript
+module.exports = {
+  presets: ['module:@react-native/babel-preset'],
+  plugins: [
+    [
+      require.resolve('babel-plugin-module-resolver'),
+      {
+        root: ['.', './src'],
+        extensions: ['.js', '.jsx', '.ts', '.tsx', '.json'],
+        alias: {
+          // 将 react-native-auto-positioned-popup 重定向到源文件
+          'react-native-auto-positioned-popup': './node_modules/react-native-auto-positioned-popup/src',
+          'react-native-auto-positioned-popup/lib/index': './node_modules/react-native-auto-positioned-popup/src/index.ts',
+          'react-native-auto-positioned-popup/lib/AutoPositionedPopup': './node_modules/react-native-auto-positioned-popup/src/AutoPositionedPopup.tsx',
+          'react-native-auto-positioned-popup/lib/AutoPositionedPopupProps': './node_modules/react-native-auto-positioned-popup/src/AutoPositionedPopupProps.ts',
+          'react-native-auto-positioned-popup/lib/RootViewContext': './node_modules/react-native-auto-positioned-popup/src/RootViewContext.tsx',
+          'react-native-auto-positioned-popup/lib/KeyboardManager': './node_modules/react-native-auto-positioned-popup/src/KeyboardManager.tsx',
+          'react-native-auto-positioned-popup/lib/AutoPositionedPopup.style': './node_modules/react-native-auto-positioned-popup/src/AutoPositionedPopup.style.ts',
+          // 如果你也使用 react-native-advanced-flatlist
+          'react-native-advanced-flatlist': './node_modules/react-native-advanced-flatlist/src',
+          'react-native-advanced-flatlist/lib/index': './node_modules/react-native-advanced-flatlist/src/index.ts',
+          'react-native-advanced-flatlist/lib/AdvancedFlatList': './node_modules/react-native-advanced-flatlist/src/AdvancedFlatList.tsx',
+        },
+      },
+    ],
+    // ... 其他插件
+  ],
+};
+```
+
+3. 清除 Metro bundler 缓存并重启：
+
+```bash
+npx react-native start --reset-cache
+```
+
+### 条件加载（高级用法）
+
+如果你想只在特定环境（例如开发环境）中有条件地加载源文件，可以在 babel 配置中添加逻辑：
+
+```javascript
+const isDevelopment = process.env.NODE_ENV === 'development';
+const useSourceFiles = process.env.USE_SOURCE_FILES === 'true';
+
+const aliasConfig = (isDevelopment || useSourceFiles) ? {
+  // ... 你的源文件别名
+} : {
+  // ... 你的生产环境别名
+};
+
+module.exports = {
+  presets: ['module:@react-native/babel-preset'],
+  plugins: [
+    [
+      require.resolve('babel-plugin-module-resolver'),
+      {
+        root: ['.', './src'],
+        extensions: ['.js', '.jsx', '.ts', '.tsx', '.json'],
+        alias: aliasConfig,
+      },
+    ],
+  ],
+};
+```
+
+### TypeScript 配置
+
+当直接加载源文件时，确保你的 `tsconfig.json` 包含必要的路径：
+
+```json
+{
+  "compilerOptions": {
+    "paths": {
+      "react-native-auto-positioned-popup": ["./node_modules/react-native-auto-positioned-popup/src"],
+      "react-native-auto-positioned-popup/*": ["./node_modules/react-native-auto-positioned-popup/src/*"]
+    }
+  }
+}
+```
+
+### 注意事项
+
+- 直接加载源文件可能会影响构建性能
+- 记得在生产构建前恢复这些更改
+- 更改 babel 配置后务必清除 Metro 缓存
+- 此方法仅建议用于开发和调试目的
+
 ## 基本用法
 
 首先，使用 `RootViewProvider` 包裹你的应用：
