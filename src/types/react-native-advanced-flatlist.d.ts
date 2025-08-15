@@ -10,7 +10,7 @@ declare module 'react-native-advanced-flatlist' {
   export default AdvancedFlatList;
 }
 
-declare module 'react-native-advanced-flatlist/src/AdvancedFlatList.tsx' {
+declare module 'react-native-advanced-flatlist' {
   import { ComponentType } from 'react';
   import { FlatListProps } from 'react-native';
 

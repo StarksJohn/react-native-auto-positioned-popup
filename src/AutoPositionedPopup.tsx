@@ -22,7 +22,7 @@ import {
 // @ts-ignore - Skip type checking for third-party library with type issues
 import {AdvancedFlatList as AdvancedFlatListLib} from 'react-native-advanced-flatlist';
 // @ts-ignore - Direct import from source when using fake data
-import AdvancedFlatListSource from 'react-native-advanced-flatlist/src/AdvancedFlatList.tsx';
+import AdvancedFlatListSource from 'react-native-advanced-flatlist';
 import {TextInputSubmitEditingEventData} from 'react-native/Libraries/Components/TextInput/TextInput';
 import {LayoutRectangle, NativeSyntheticEvent} from 'react-native/Libraries/Types/CoreEventTypes';
 import {AutoPositionedPopupProps, Data, SelectedItem} from './AutoPositionedPopupProps';
