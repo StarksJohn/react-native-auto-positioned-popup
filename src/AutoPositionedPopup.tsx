@@ -510,19 +510,81 @@ const AutoPositionedPopup: MemoExoticComponent<
           if (state.isFocus) {
             refAutoPositionedPopup.current?.measureInWindow((x: number, y: number, width: number, height: number) => {
               console.log('AutoPositionedPopup measureInWindow x=', x, ' y=', y, ' width=', width, ' height=', height);
-              // SIMPLE CENTER-BASED POSITIONING STRATEGY
-              const screenHeight = Dimensions.get('screen').height;
-              const screenCenter = screenHeight / 2;
-              console.log('AutoPositionedPopup screenHeight=', screenHeight, ' screenCenter=', screenCenter, ' componentY=', y);
-
-              // Simple rule: if component Y > screen center, show popup above; otherwise show below
-              if (y > screenCenter) {
-                console.log('AutoPositionedPopup: showing above (Y > center)');
-                ref_listPos.current = {x: x, y: y - listLayout.height, width: width};
-              } else {
-                console.log('AutoPositionedPopup: showing below (Y <= center)');
-                ref_listPos.current = {x: x, y: y + height, width: width};
-              }
+              
+              // INTELLIGENT POSITION CALCULATION
+              const calculateOptimalPosition = (componentY: number, componentHeight: number, popupHeight: number) => {
+                // Use window height (visible area) instead of screen height (includes status bar)
+                const windowHeight = Dimensions.get('window').height;
+                const visibleAreaCenter = windowHeight / 2;
+                
+                // Calculate component center point as requested
+                const componentCenterY = componentY + componentHeight / 2;
+                
+                console.log('AutoPositionedPopup positioning data:', {
+                  windowHeight,
+                  visibleAreaCenter,
+                  componentCenterY,
+                  componentY,
+                  componentHeight,
+                  popupHeight
+                });
+                
+                let showAbove = false;
+                let finalY = componentY + componentHeight; // Default: show below
+                
+                // Primary logic: use component center point vs visible area center
+                if (componentCenterY > visibleAreaCenter) {
+                  // Component center is in lower half, prefer showing above
+                  const spaceAbove = componentY;
+                  if (spaceAbove >= popupHeight) {
+                    showAbove = true;
+                    finalY = componentY - popupHeight;
+                  } else {
+                    // Not enough space above, check if we can fit below
+                    const spaceBelow = windowHeight - (componentY + componentHeight);
+                    if (spaceBelow >= popupHeight) {
+                      // Show below if there's space
+                      finalY = componentY + componentHeight;
+                    } else {
+                      // Force above with clipping
+                      showAbove = true;
+                      finalY = Math.max(0, componentY - popupHeight);
+                    }
+                  }
+                } else {
+                  // Component center is in upper half, prefer showing below
+                  const spaceBelow = windowHeight - (componentY + componentHeight);
+                  if (spaceBelow >= popupHeight) {
+                    // Show below
+                    finalY = componentY + componentHeight;
+                  } else {
+                    // Not enough space below, try above
+                    const spaceAbove = componentY;
+                    if (spaceAbove >= popupHeight) {
+                      showAbove = true;
+                      finalY = componentY - popupHeight;
+                    } else {
+                      // Force below with clipping
+                      finalY = Math.min(windowHeight - popupHeight, componentY + componentHeight);
+                    }
+                  }
+                }
+                
+                // Final boundary check to ensure popup stays within visible area
+                if (finalY < 0) {
+                  finalY = 0;
+                }
+                if (finalY + popupHeight > windowHeight) {
+                  finalY = windowHeight - popupHeight;
+                }
+                
+                return { finalY, showAbove };
+              };
+              
+              const positionResult = calculateOptimalPosition(y, height, listLayout.height);
+              console.log('AutoPositionedPopup position result:', positionResult);
+              
+              ref_listPos.current = {x: x, y: positionResult.finalY, width: width};
               console.log('AutoPositionedPopup ref_listPos.current=', ref_listPos.current);
               if (CustomPopView && CustomPopViewStyle) {
                 console.log('AutoPositionedPopup CustomPopViewStyle=', CustomPopViewStyle);
@@ -530,17 +592,14 @@ const AutoPositionedPopup: MemoExoticComponent<
                 const customHeight =
                   typeof CustomPopViewStyle.height === 'number' ? CustomPopViewStyle.height : listLayout.height;
 
-                // Apply same simple center-based strategy for CustomPopView
-                console.log('AutoPositionedPopup CustomPopView using center-based positioning, customHeight=', customHeight);
+                // Apply same intelligent positioning strategy for CustomPopView
+                console.log('AutoPositionedPopup CustomPopView using intelligent positioning, customHeight=', customHeight);
 
-                // Simple rule: if component Y > screen center, show popup above; otherwise show below
-                if (y > screenCenter) {
-                  console.log('AutoPositionedPopup CustomPopView: showing above (Y > center), tag=', tag);
-                  ref_listPos.current = {x: x, y: y - customHeight, width: width};
-                } else {
-                  console.log('AutoPositionedPopup CustomPopView: showing below (Y <= center), tag=', tag);
-                  ref_listPos.current = {x: x, y: y + height, width: width};
-                }
+                // Use the same intelligent positioning function for CustomPopView
+                const customPositionResult = calculateOptimalPosition(y, height, customHeight);
+                console.log('AutoPositionedPopup CustomPopView position result:', customPositionResult, 'tag=', tag);
+                
+                ref_listPos.current = {x: x, y: customPositionResult.finalY, width: width};
                 const PopViewComponent = CustomPopView();
                 console.log('AutoPositionedPopup addRootView PopViewComponent=', PopViewComponent);
                 console.log('AutoPositionedPopup addRootView state.selectedItem=', state.selectedItem);
