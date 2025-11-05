@@ -105,6 +105,100 @@ module.exports = {
 };
 ```
 
+#### Dynamic Control via global.$fake (Recommended Approach)
+
+A more advanced approach is to dynamically control source code loading through your project's global configuration file. This method allows runtime switching without modifying environment variables:
+
+1. Create or modify the `global.ts` file in your project root:
+
+```typescript
+// global.ts
+declare global {
+  var $fake: boolean;
+  // ... other global variables
+}
+
+// Set to true to load source code (development mode)
+// Set to false to use compiled files (production mode)
+global.$fake = true; // or false
+
+export {};
+```
+
+2. Read the `global.$fake` value in your `babel.config.js`:
+
+```javascript
+const fs = require('fs');
+const path = require('path');
+
+// Check global.$fake value
+const checkFakeMode = () => {
+  try {
+    const globalPath = path.resolve(__dirname, 'global.ts');
+    const globalContent = fs.readFileSync(globalPath, 'utf8');
+    // Check if global.$fake is true
+    const fakeMatch = globalContent.match(/\$fake\s*=\s*(true|false)/);
+    return fakeMatch && fakeMatch[1] === 'true';
+  } catch (error) {
+    console.warn('Unable to read global.ts, defaulting to false:', error.message);
+    return false;
+  }
+};
+
+const isFakeMode = checkFakeMode();
+
+// Base alias configuration
+const baseAlias = {
+  // ... your base aliases
+};
+
+// If in fake mode, add source code redirects
+const aliasConfig = isFakeMode ? {
+  ...baseAlias,
+  // Redirect react-native-auto-positioned-popup to source files
+  'react-native-auto-positioned-popup': './node_modules/react-native-auto-positioned-popup/src',
+  'react-native-auto-positioned-popup/lib/index': './node_modules/react-native-auto-positioned-popup/src/index.ts',
+  'react-native-auto-positioned-popup/lib/AutoPositionedPopup': './node_modules/react-native-auto-positioned-popup/src/AutoPositionedPopup.tsx',
+  'react-native-auto-positioned-popup/lib/AutoPositionedPopupProps': './node_modules/react-native-auto-positioned-popup/src/AutoPositionedPopupProps.ts',
+  'react-native-auto-positioned-popup/lib/RootViewContext': './node_modules/react-native-auto-positioned-popup/src/RootViewContext.tsx',
+  'react-native-auto-positioned-popup/lib/KeyboardManager': './node_modules/react-native-auto-positioned-popup/src/KeyboardManager.tsx',
+  'react-native-auto-positioned-popup/lib/AutoPositionedPopup.style': './node_modules/react-native-auto-positioned-popup/src/AutoPositionedPopup.style.ts',
+  // If you also use react-native-advanced-flatlist
+  'react-native-advanced-flatlist': './node_modules/react-native-advanced-flatlist/src',
+  'react-native-advanced-flatlist/lib/index': './node_modules/react-native-advanced-flatlist/src/index.ts',
+  'react-native-advanced-flatlist/lib/AdvancedFlatList': './node_modules/react-native-advanced-flatlist/src/AdvancedFlatList.tsx',
+} : baseAlias;
+
+console.log(`Babel Config - Fake Mode: ${isFakeMode ? 'ENABLED' : 'DISABLED'}`);
+if (isFakeMode) {
+  console.log('✅ Using react-native-auto-positioned-popup SOURCE files (.tsx)');
+} else {
+  console.log('📦 Using react-native-auto-positioned-popup COMPILED files (.js)');
+}
+
+module.exports = {
+  presets: ['module:@react-native/babel-preset'],
+  plugins: [
+    [
+      require.resolve('babel-plugin-module-resolver'),
+      {
+        root: ['.', './src'],
+        extensions: ['.js', '.jsx', '.ts', '.tsx', '.json'],
+        alias: aliasConfig,
+      },
+    ],
+    // ... other plugins
+  ],
+};
+```
+
+**Advantages of this approach**:
+- ✅ No need to set environment variables, just modify the `global.ts` file
+- ✅ Can switch dynamically at runtime (restart Metro after modifying the file)
+- ✅ More intuitive configuration with all settings centralized in one file
+- ✅ Suitable for team collaboration, different developers can have different local configs
+- ✅ Avoids environment variable compatibility issues across different operating systems
+
 ### TypeScript Configuration
 
 When loading source files directly, ensure your `tsconfig.json` includes the necessary paths:

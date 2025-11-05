@@ -58,4 +58,6 @@ export interface AutoPositionedPopupProps {
   AutoPositionedPopupBtnDisabled?: boolean;
   centerDisplay?: boolean;
   selectedItemBackgroundColor?: string;
+  showListEmptyComponent?:boolean;
+  emptyText?:string;
 }

@@ -105,6 +105,100 @@ module.exports = {
 };
 ```
 
+#### 通过 global.$fake 动态控制（推荐方式）
+
+更高级的用法是通过项目的全局配置文件动态控制是否加载源码。这种方式允许在运行时切换而无需修改环境变量：
+
+1. 在项目根目录创建或修改 `global.ts` 文件：
+
+```typescript
+// global.ts
+declare global {
+  var $fake: boolean;
+  // ... 其他全局变量
+}
+
+// 设置为 true 时加载源码（开发模式）
+// 设置为 false 时使用编译文件（生产模式）
+global.$fake = true; // 或 false
+
+export {};
+```
+
+2. 在 `babel.config.js` 中读取 `global.$fake` 的值：
+
+```javascript
+const fs = require('fs');
+const path = require('path');
+
+// 检查 global.$fake 的值
+const checkFakeMode = () => {
+  try {
+    const globalPath = path.resolve(__dirname, 'global.ts');
+    const globalContent = fs.readFileSync(globalPath, 'utf8');
+    // 检查 global.$fake 是否为 true
+    const fakeMatch = globalContent.match(/\$fake\s*=\s*(true|false)/);
+    return fakeMatch && fakeMatch[1] === 'true';
+  } catch (error) {
+    console.warn('Unable to read global.ts, defaulting to false:', error.message);
+    return false;
+  }
+};
+
+const isFakeMode = checkFakeMode();
+
+// 基础别名配置
+const baseAlias = {
+  // ... 你的基础别名
+};
+
+// 如果是 fake 模式，添加源码重定向
+const aliasConfig = isFakeMode ? {
+  ...baseAlias,
+  // 重定向 react-native-auto-positioned-popup 到源码文件
+  'react-native-auto-positioned-popup': './node_modules/react-native-auto-positioned-popup/src',
+  'react-native-auto-positioned-popup/lib/index': './node_modules/react-native-auto-positioned-popup/src/index.ts',
+  'react-native-auto-positioned-popup/lib/AutoPositionedPopup': './node_modules/react-native-auto-positioned-popup/src/AutoPositionedPopup.tsx',
+  'react-native-auto-positioned-popup/lib/AutoPositionedPopupProps': './node_modules/react-native-auto-positioned-popup/src/AutoPositionedPopupProps.ts',
+  'react-native-auto-positioned-popup/lib/RootViewContext': './node_modules/react-native-auto-positioned-popup/src/RootViewContext.tsx',
+  'react-native-auto-positioned-popup/lib/KeyboardManager': './node_modules/react-native-auto-positioned-popup/src/KeyboardManager.tsx',
+  'react-native-auto-positioned-popup/lib/AutoPositionedPopup.style': './node_modules/react-native-auto-positioned-popup/src/AutoPositionedPopup.style.ts',
+  // 如果你也使用 react-native-advanced-flatlist
+  'react-native-advanced-flatlist': './node_modules/react-native-advanced-flatlist/src',
+  'react-native-advanced-flatlist/lib/index': './node_modules/react-native-advanced-flatlist/src/index.ts',
+  'react-native-advanced-flatlist/lib/AdvancedFlatList': './node_modules/react-native-advanced-flatlist/src/AdvancedFlatList.tsx',
+} : baseAlias;
+
+console.log(`Babel Config - Fake Mode: ${isFakeMode ? 'ENABLED' : 'DISABLED'}`);
+if (isFakeMode) {
+  console.log('✅ Using react-native-auto-positioned-popup SOURCE files (.tsx)');
+} else {
+  console.log('📦 Using react-native-auto-positioned-popup COMPILED files (.js)');
+}
+
+module.exports = {
+  presets: ['module:@react-native/babel-preset'],
+  plugins: [
+    [
+      require.resolve('babel-plugin-module-resolver'),
+      {
+        root: ['.', './src'],
+        extensions: ['.js', '.jsx', '.ts', '.tsx', '.json'],
+        alias: aliasConfig,
+      },
+    ],
+    // ... 其他插件
+  ],
+};
+```
+
+**这种方式的优势**：
+- ✅ 无需设置环境变量，只需修改 `global.ts` 文件
+- ✅ 可以在运行时动态切换（修改文件后重启 Metro）
+- ✅ 更直观的配置方式，所有配置集中在一个文件
+- ✅ 适合团队协作，不同开发者可以有不同的本地配置
+- ✅ 避免了环境变量在不同操作系统的兼容性问题
+
 ### TypeScript 配置
 
 当直接加载源文件时，确保你的 `tsconfig.json` 包含必要的路径：

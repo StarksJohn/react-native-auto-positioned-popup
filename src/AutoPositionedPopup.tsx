@@ -89,7 +89,8 @@ const ListItem: React.FC<{
     }, [rootViews]);
     return useMemo(() => {
       // console.log('AutoPositionedPopup.tsx ListItem index=', index);
-      // console.log('AutoPositionedPopup.tsx ListItem item=', item);
+      console.log('AutoPositionedPopup.tsx ListItem item=', item);
+      console.log('AutoPositionedPopup.tsx ListItem selectedItem=', selectedItem);
       const isSelected = item.id === selectedItem?.id;
       return (
         <TouchableOpacity
@@ -131,6 +132,8 @@ interface AutoPositionedPopupListProps {
   selectedItem?: SelectedItem;
   localSearch?: boolean;
   pageSize?: number;
+  showListEmptyComponent?:boolean;
+  emptyText?: string;
 }
 
 const AutoPositionedPopupList: React.FC<AutoPositionedPopupListProps> = memo(
@@ -142,7 +145,7 @@ const AutoPositionedPopupList: React.FC<AutoPositionedPopupListProps> = memo(
      renderItem,
      selectedItem,
      localSearch,
-     pageSize,
+     pageSize,showListEmptyComponent,emptyText
    }: AutoPositionedPopupListProps): React.JSX.Element => {
     const [state, setState] = useState<{
       selectedItem?: SelectedItem;
@@ -273,7 +276,8 @@ const AutoPositionedPopupList: React.FC<AutoPositionedPopupListProps> = memo(
             keyboardShouldPersistTaps={'always'}
             fetchData={_fetchData}
             renderItem={renderItem ? ({item, index}) => renderItem({item: item as SelectedItem, index}) : ({item, index}) => _renderItem({item: item as SelectedItem, index})}
-            showListEmptyComponent={false}
+            showListEmptyComponent={showListEmptyComponent}
+            emptyText={emptyText}
           />
         </View>
       );
@@ -287,7 +291,7 @@ const AutoPositionedPopupList: React.FC<AutoPositionedPopupListProps> = memo(
       searchQuery,
       localSearch,
       pageSize,
-      rootViewsRef,
+      rootViewsRef,showListEmptyComponent,emptyText
     ]);
   }
 );
@@ -356,7 +360,7 @@ const AutoPositionedPopup = memo(
         centerDisplay = false,
         selectedItemBackgroundColor = 'rgba(116, 116, 128, 0.08)',
         textAlign = 'right',
-        CustomPopView = undefined, CustomPopViewStyle
+        CustomPopView = undefined, CustomPopViewStyle,showListEmptyComponent=true,emptyText=''
       } = props;
       // State management similar to project implementation
       const [state, setState] = useState<StateProps>({
@@ -776,6 +780,8 @@ const AutoPositionedPopup = memo(
                       renderItem={renderItem}
                       selectedItem={state.selectedItem}
                       localSearch={localSearch}
+                      showListEmptyComponent={showListEmptyComponent}
+                      emptyText={emptyText}
                     />
                   ),
                   useModal: true,
@@ -812,7 +818,7 @@ const AutoPositionedPopup = memo(
         CustomPopViewStyle,
         forceRemoveAllRootViewOnItemSelected,
         tag,
-        state.selectedItem,
+        state.selectedItem,showListEmptyComponent
       ]);
       // Imperative handle for parent component access
       useImperativeHandle(
@@ -906,6 +912,8 @@ const AutoPositionedPopup = memo(
                             renderItem={renderItem}
                             selectedItem={state.selectedItem}
                             localSearch={localSearch}
+                            showListEmptyComponent={showListEmptyComponent}
+                            emptyText={emptyText}
                           />
                         ),
                         useModal: false,
@@ -1064,7 +1072,7 @@ const AutoPositionedPopup = memo(
         forceRemoveAllRootViewOnItemSelected,
         inputStyle,
         TextInputProps,
-        state.isFocus,]);
+        state.isFocus,showListEmptyComponent,emptyText]);
     }
   )
 );
