@@ -496,7 +496,7 @@ const AutoPositionedPopup = memo(
         };
         // Only execute logic when keyboard state actually changes or user actively operates
         if (!keyboardStateChanged  && hasAddedRootView.current) {
-          console.log('AutoPositionedPopup: Skip execution - parent component re-rendered but keyboard state unchanged');
+          console.log('AutoPositionedPopup: Skip execution - parent component re-rendered but keyboard state unchanged textInputRef.current=',textInputRef.current);
           // if (!ref_isFocus.current) {
           //   textInputRef.current?.focus()
           // }
@@ -504,31 +504,73 @@ const AutoPositionedPopup = memo(
         }
         if (useTextInput) {
           if (isKeyboardFullyShown && hasAddedRootView.current && !hasShownRootView.current && state.isFocus) {
-            refAutoPositionedPopup.current?.measureInWindow((x: number, y: number, width: number, height: number) => {
-              console.log('AutoPositionedPopup useTextInput measureInWindow=', {x, y, width, height});
-              // SIMPLE CENTER-BASED POSITIONING STRATEGY
-              const screenHeight = Dimensions.get('screen').height;
-              const screenCenter = screenHeight / 2;
-              console.log('AutoPositionedPopup useTextInput measureInWindow =', {screenHeight, screenCenter, componentY: y});
-
-              // Simple rule: if component Y > screen center, show popup above; otherwise show below
-              if (y > screenCenter) {
-                console.log('AutoPositionedPopup with keyboard: showing above (Y > center)');
-                ref_listPos.current = {x: x, y: y - listLayout.height, width: width};
-              } else {
-                console.log('AutoPositionedPopup with keyboard: showing below (Y <= center)');
-                ref_listPos.current = {x: x, y: y + height, width: width};
-              }
-              console.log('AutoPositionedPopup useTextInput ref_listPos.current=', ref_listPos.current);
-              setRootViewNativeStyle(tag, {
-                top: ref_listPos.current?.y,
-                left: popUpViewStyle?.left,
-                width: popUpViewStyle?.width,
-                height: listLayout.height,
-                opacity: 1,
+            // CRITICAL FIX FOR KEYBOARD POSITION CALCULATION
+            // Problem: When keyboard appears, the page shifts up but measureInWindow executes too early
+            // Solution: Wait for keyboard animation (300ms) + use requestAnimationFrame for next render frame
+            //
+            // Timing breakdown:
+            // 1. Keyboard animation: ~250-300ms (iOS/Android)
+            // 2. Page shift animation: ~200-300ms (KeyboardAvoidingView)
+            // 3. Layout tree update: ~50-100ms (React Native)
+            // Total: ~500-700ms needed for stable layout
+            //
+            // Strategy: setTimeout(300ms) waits for most animations to complete,
+            // then requestAnimationFrame ensures measurement happens after next render frame
+            setTimeout(() => {
+              requestAnimationFrame(() => {
+                refAutoPositionedPopup.current?.measureInWindow((x: number, y: number, width: number, height: number) => {
+                  console.log('AutoPositionedPopup useTextInput measureInWindow (after 300ms + RAF, layout stable)=', {x, y, width, height});
+                  // CRITICAL FIX: Coordinate system mismatch issue
+                  // Problem: measureInWindow returns coordinates relative to window (fixed reference),
+                  // but popup uses absolute positioning relative to App container (which shifts when keyboard appears)
+                  //
+                  // When keyboard appears:
+                  // 1. measureInWindow returns y relative to window (e.g., y=400 after shifting)
+                  // 2. But popup's absolute positioning is relative to App container
+                  // 3. If App container shifted up by 200px, setting top=200 will display at window.y=0 (wrong!)
+                  //
+                  // Solution: Since popup is rendered at root level and uses absolute positioning,
+                  // we should directly use measureInWindow's y value without additional calculations
+                  // The popup container is at the same level as the page content
+                  const screenHeight = Dimensions.get('window').height; // Use window height, not screen
+                  console.log('AutoPositionedPopup useTextInput positioning data=', {
+                    screenHeight,
+                    componentY: y,
+                    componentHeight: height,
+                    listHeight: listLayout.height
+                  });
+                  // CORRECT POSITIONING LOGIC (as per user requirement):
+                  // 1. ALWAYS try to show popup ABOVE the input field first
+                  // 2. Only if that goes off the top of screen, show BELOW instead
+                  // 3. Don't cover/overlap the input field
+                  let popupY = y - listLayout.height; // Default: above input field
+                  // Check if showing above would go off the top of screen
+                  if (popupY < 0) {
+                    console.log('AutoPositionedPopup with keyboard: would go off screen top, showing BELOW instead');
+                    popupY = y + height; // Show below input field
+                    // Also check if showing below would go off the bottom
+                    const maxY = screenHeight - listLayout.height;
+                    if (popupY > maxY) {
+                      // If both positions are problematic, clamp to visible area
+                      console.log('AutoPositionedPopup with keyboard: both positions problematic, clamping to visible area');
+                      popupY = Math.min(Math.max(0, y - listLayout.height), maxY);
+                    }
+                  } else {
+                    console.log('AutoPositionedPopup with keyboard: showing ABOVE input field (preferred position)');
+                  }
+                  ref_listPos.current = {x: x, y: popupY, width: width};
+                  console.log('AutoPositionedPopup useTextInput final position=', ref_listPos.current);
+                  setRootViewNativeStyle(tag, {
+                    top: ref_listPos.current?.y,
+                    left: popUpViewStyle?.left,
+                    width: popUpViewStyle?.width,
+                    height: listLayout.height,
+                    opacity: 1,
+                  });
+                  hasShownRootView.current = true;
+                });
               });
-              hasShownRootView.current = true;
-            });
+            }, 300) // 300ms is sufficient for keyboard animation, as proven by user testing (even 3000ms didn't fix wrong logic)
           } else if (!isKeyboardFullyShown && ref_isFocus.current && keyboardStateChanged) {
             // Only execute close logic when keyboard state actually changes from true to false
             console.log(

@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Keyboard, EmitterSubscription, Platform } from 'react-native';
 
+// Debounce function
 const debounce = (func: Function, delay: number) => {
   let timer: NodeJS.Timeout;
   return (...args: any[]) => {
@@ -12,68 +13,91 @@ const debounce = (func: Function, delay: number) => {
 export const useKeyboardStatus = () => {
   const [isKeyboardFullyShown, setIsKeyboardFullyShown] = useState(false);
 
-  // 使用防抖包裝狀態更新函數
-  const debouncedSetKeyboardShown = useRef(
-    debounce((value: boolean) => {
-      console.log('KeyboardManager: Setting keyboard status to', value);
+  // Add state cache to avoid repeatedly setting the same state
+  const currentKeyboardStatusRef = useRef<boolean>(false);
+  const lastUpdateTimeRef = useRef<number>(0);
+  const pendingValueRef = useRef<boolean | null>(null);
+
+  // Wrapper function: check state before debounce
+  const safeSetKeyboardShown = useRef((value: boolean) => {
+    const currentTime = Date.now();
+    const timeSinceLastUpdate = currentTime - lastUpdateTimeRef.current;
+
+    // ✅ FIX: Check state before debounce
+    if (currentKeyboardStatusRef.current === value) {
+      console.log('KeyboardManager: Skip - Keyboard state unchanged (before debounce)', { value, timeSinceLastUpdate });
+      return;
+    }
+
+    // ✅ FIX: Skip if the same value is already pending
+    if (pendingValueRef.current === value) {
+      console.log('KeyboardManager: Skip - Same value already in processing queue', { value });
+      return;
+    }
+
+    // ✅ FIX: Mark the value being processed
+    pendingValueRef.current = value;
+
+    // Call the actual update function
+    debouncedSetKeyboardShownInternal(value, currentTime, timeSinceLastUpdate);
+  }).current;
+
+  // Internal debounce function
+  const debouncedSetKeyboardShownInternal = useRef(
+    debounce((value: boolean, currentTime: number, timeSinceLastUpdate: number) => {
+      // ✅ FIX: Check state again (in case state was updated during debounce)
+      if (currentKeyboardStatusRef.current === value) {
+        console.log('KeyboardManager: Skip - Keyboard state unchanged (after debounce)', { value, timeSinceLastUpdate });
+        pendingValueRef.current = null;
+        return;
+      }
+
+      console.log('KeyboardManager: Setting keyboard status to', value, {
+        previousValue: currentKeyboardStatusRef.current,
+        timeSinceLastUpdate
+      });
+
+      currentKeyboardStatusRef.current = value;
+      lastUpdateTimeRef.current = currentTime;
+      pendingValueRef.current = null;
       setIsKeyboardFullyShown(value);
     }, 300)
   ).current;
 
+  // Use the wrapped function
+  const debouncedSetKeyboardShown = safeSetKeyboardShown;
+
   useEffect(() => {
-    let keyboardWillShowListener: EmitterSubscription;
     let keyboardDidShowListener: EmitterSubscription;
-    let keyboardWillHideListener: EmitterSubscription;
     let keyboardDidHideListener: EmitterSubscription;
 
-    if (Platform.OS === 'ios') {
-      keyboardWillShowListener = Keyboard.addListener(
-        'keyboardWillShow',
-        () => {
-          debouncedSetKeyboardShown(false);
+    // ✅ FIX: Use the same logic for iOS and Android - only listen to Did events
+    // Remove Will event listeners to avoid duplicate triggers and state race conditions
+    keyboardDidShowListener = Keyboard.addListener(
+      'keyboardDidShow',
+      () => {
+        // ✅ FIX: Add protection at event listener level - skip if keyboard is already open
+        if (currentKeyboardStatusRef.current === true) {
+          console.log('KeyboardManager: Skip keyboardDidShow event - Keyboard is already open');
+          return;
         }
-      );
-      keyboardDidShowListener = Keyboard.addListener(
-        'keyboardDidShow',
-        () => {
-          debouncedSetKeyboardShown(true);
+        debouncedSetKeyboardShown(true);
+      }
+    );
+    keyboardDidHideListener = Keyboard.addListener(
+      'keyboardDidHide',
+      () => {
+        // ✅ FIX: Add protection at event listener level - skip if keyboard is already closed
+        if (currentKeyboardStatusRef.current === false) {
+          console.log('KeyboardManager: Skip keyboardDidHide event - Keyboard is already closed');
+          return;
         }
-      );
-      keyboardWillHideListener = Keyboard.addListener(
-        'keyboardWillHide',
-        () => {
-          debouncedSetKeyboardShown(false);
-        }
-      );
-      keyboardDidHideListener = Keyboard.addListener(
-        'keyboardDidHide',
-        () => {
-          debouncedSetKeyboardShown(false);
-        }
-      );
-    } else {
-      keyboardDidShowListener = Keyboard.addListener(
-        'keyboardDidShow',
-        () => {
-          debouncedSetKeyboardShown(true);
-        }
-      );
-      keyboardDidHideListener = Keyboard.addListener(
-        'keyboardDidHide',
-        () => {
-          debouncedSetKeyboardShown(false);
-        }
-      );
-    }
+        debouncedSetKeyboardShown(false);
+      }
+    );
 
     return () => {
-      if (Platform.OS === 'ios') {
-        keyboardWillShowListener?.remove();
-      }
       keyboardDidShowListener?.remove();
-      if (Platform.OS === 'ios') {
-        keyboardWillHideListener?.remove();
-      }
       keyboardDidHideListener?.remove();
     };
   }, []);
