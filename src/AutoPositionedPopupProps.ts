@@ -23,10 +23,10 @@ export interface AutoPositionedPopupProps {
   tag: string;
   tagStyle?: ViewStyle;
   fetchData?: ({
-    pageIndex,
-    pageSize,
-    searchQuery,
-  }: {
+                 pageIndex,
+                 pageSize,
+                 searchQuery,
+               }: {
     pageIndex: number;
     pageSize: number;
     searchQuery?: string;
@@ -45,12 +45,18 @@ export interface AutoPositionedPopupProps {
   keyExtractor?: (item: SelectedItem) => string;
   CustomPopView?: () => React.ComponentType<
     ViewStyle & {
-      children?: React.ReactNode;
-      selectedItem?: SelectedItem | any;
-    }
+    children?: React.ReactNode;
+    selectedItem?: SelectedItem | any;
+  }
   >;
   CustomPopViewStyle?: ViewStyle;
   forceRemoveAllRootViewOnItemSelected?: boolean;
+  /**
+   * inputStyle={stableTransparentInputStyle}
+   *  const stableTransparentInputStyle = useMemo(() => {
+   *     return mode === 'light' ? {backgroundColor: 'transparent'} : false;
+   *   }, [mode]);
+   */
   inputStyle?: StyleProp<TextStyle>;
   TextInputProps?: TextInputProps;
   popUpViewStyle?: ViewStyle;

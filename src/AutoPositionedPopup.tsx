@@ -88,9 +88,7 @@ const ListItem: React.FC<{
       rootViewsRef.current = rootViews;
     }, [rootViews]);
     return useMemo(() => {
-      // console.log('AutoPositionedPopup.tsx ListItem index=', index);
-      console.log('AutoPositionedPopup.tsx ListItem item=', item);
-      console.log('AutoPositionedPopup.tsx ListItem selectedItem=', selectedItem);
+      // console.log('AutoPositionedPopup.tsx ListItem=', {index, item, selectedItem});
       const isSelected = item.id === selectedItem?.id;
       return (
         <TouchableOpacity
@@ -132,7 +130,7 @@ interface AutoPositionedPopupListProps {
   selectedItem?: SelectedItem;
   localSearch?: boolean;
   pageSize?: number;
-  showListEmptyComponent?:boolean;
+  showListEmptyComponent?: boolean;
   emptyText?: string;
 }
 
@@ -145,7 +143,7 @@ const AutoPositionedPopupList: React.FC<AutoPositionedPopupListProps> = memo(
      renderItem,
      selectedItem,
      localSearch,
-     pageSize,showListEmptyComponent,emptyText
+     pageSize, showListEmptyComponent, emptyText
    }: AutoPositionedPopupListProps): React.JSX.Element => {
     const [state, setState] = useState<{
       selectedItem?: SelectedItem;
@@ -176,8 +174,8 @@ const AutoPositionedPopupList: React.FC<AutoPositionedPopupListProps> = memo(
       };
     }, []);
     // useEffect(() => {
-    //   // 監聽 TextInput 事件，收到就刷新列表，不依賴 global searchQuery
-    //   // 將最新的 searchQuery 同步到 list 專用的 ref，供 _fetchData 使用
+    //   // Listen to TextInput events, refresh list when received, not dependent on global searchQuery
+    //   // Sync the latest searchQuery to list-specific ref for _fetchData to use
     //   ref_searchQuery.current = searchQuery;
     //   console.log('AutoPositionedPopupList useEffect searchQuery=', searchQuery);
     //   console.log('AutoPositionedPopupList useEffect state.localData=', state.localData);
@@ -212,10 +210,7 @@ const AutoPositionedPopupList: React.FC<AutoPositionedPopupListProps> = memo(
                                 pageIndex,
                                 pageSize: currentPageSize,
                               }: FetchDataParams): Promise<ListData | null> => {
-      console.log('AutoPositionedPopupList _fetchData pageIndex=', pageIndex, ' pageSize=', currentPageSize);
-      console.log('AutoPositionedPopupList _fetchData state.localData=', state.localData);
-      console.log('AutoPositionedPopupList _fetchData ref_searchQuery.current=', ref_searchQuery.current);
-      console.log('AutoPositionedPopupList _fetchData localSearch=', localSearch);
+      console.log('AutoPositionedPopupList _fetchData=', {pageIndex, pageSize: currentPageSize, 'state.localData': state.localData, 'ref_searchQuery.current': ref_searchQuery.current, localSearch});
       if (localSearch && state.localData.length > 0) {
         const result: SelectedItem[] = state.localData.filter((item: SelectedItem) => {
           return item.title?.toLowerCase().includes(ref_searchQuery.current.toLowerCase());
@@ -291,7 +286,7 @@ const AutoPositionedPopupList: React.FC<AutoPositionedPopupListProps> = memo(
       searchQuery,
       localSearch,
       pageSize,
-      rootViewsRef,showListEmptyComponent,emptyText
+      rootViewsRef, showListEmptyComponent, emptyText
     ]);
   }
 );
@@ -318,7 +313,7 @@ const AutoPositionedPopup = memo(
         AutoPositionedPopupBtnStyle,
         placeholder = 'Please Select',
         onSubmitEditing,
-        TextInputProps = {},
+        TextInputProps = {autoFocus: true},
         inputStyle,
         labelStyle,
         popUpViewStyle = {left: '5%', width: '90%'},
@@ -360,7 +355,7 @@ const AutoPositionedPopup = memo(
         centerDisplay = false,
         selectedItemBackgroundColor = 'rgba(116, 116, 128, 0.08)',
         textAlign = 'right',
-        CustomPopView = undefined, CustomPopViewStyle,showListEmptyComponent=true,emptyText=''
+        CustomPopView = undefined, CustomPopViewStyle, showListEmptyComponent = true, emptyText = ''
       } = props;
       // State management similar to project implementation
       const [state, setState] = useState<StateProps>({
@@ -381,6 +376,20 @@ const AutoPositionedPopup = memo(
       const keyboardVisibleRef = useRef(false);
       const refAutoPositionedPopup = useRef<View>(null);
       const ref_searchQuery = useRef<string>('');
+      // Add ref to track previous keyboard state to avoid false triggers during parent component re-renders
+      const prevIsKeyboardFullyShownRef = useRef<boolean>(false);
+      const prevPropsRef = useRef<{
+        CustomPopView?: any;
+        CustomPopViewStyle?: any;
+        TextInputProps?: any;
+      }>({});
+      // Add ref to prevent onFocus/onBlur loop triggers during parent component re-renders
+      const lastFocusTimeRef = useRef<number>(0);
+      const isFocusEventProcessingRef = useRef<boolean>(false);
+      // Add ref to stabilize TextInput props reference
+      // Only update when deep comparison detects real changes to avoid TextInput recreation due to reference changes during parent component redraws
+      const stableInputStyleRef = useRef<any>(inputStyle);
+      const stableTextInputPropsRef = useRef<any>(TextInputProps);
       // Simple keyboard status tracking (alternative to useKeyboardStatus hook)
       // Legacy state for compatibility
       const [isVisible, setIsVisible] = useState(false);
@@ -406,8 +415,7 @@ const AutoPositionedPopup = memo(
       useEffect(() => {
         (async () => {
         })();
-        console.log(`AutoPositionedPopup componentDidMount tag=`, tag);
-        console.log('AutoPositionedPopup componentDidMount CustomPopView=', CustomPopView);
+        console.log(`AutoPositionedPopup componentDidMount=`, {tag, CustomPopView});
         //componentWillUnmount
         return () => {
           console.log(`AutoPositionedPopup componentWillUnmount tag=`, tag);
@@ -440,8 +448,7 @@ const AutoPositionedPopup = memo(
         }
       }, [rootViews]);
       useEffect(() => {
-        console.log('AutoPositionedPopup useEffect tag=', tag);
-        console.log('AutoPositionedPopup useEffect selectedItem=', selectedItem);
+        console.log('AutoPositionedPopup useEffect [selectedItem, state.selectedItem, tag]=', {tag, selectedItem, 'state.selectedItem': state.selectedItem});
         console.log('AutoPositionedPopup useEffect state.selectedItem=', state.selectedItem);
         if (state.selectedItem?.id !== selectedItem?.id || state.selectedItem?.title !== selectedItem?.title) {
           console.log('AutoPositionedPopup useEffect selectedItem!=state.selectedItem');
@@ -454,26 +461,55 @@ const AutoPositionedPopup = memo(
         }
       }, [selectedItem, state.selectedItem, tag]);
       useEffect(() => {
-        console.log('AutoPositionedPopup useEffect tag=', tag);
-        console.log('AutoPositionedPopup useEffect state.isFocus=', state.isFocus);
-        console.log('AutoPositionedPopup useEffect isKeyboardFullyShown=', isKeyboardFullyShown);
-        console.log('AutoPositionedPopup useEffect ref_isFocus.current=', ref_isFocus.current);
-        console.log(
-          'AutoPositionedPopup useEffect ref_isKeyboardFullyShown.current=',
-          ref_isKeyboardFullyShown.current
-        );
-        console.log('AutoPositionedPopup useEffect useTextInput=', useTextInput);
-        console.log('AutoPositionedPopup useEffect TextInputProps=', TextInputProps);
-        console.log('AutoPositionedPopup useEffect hasAddedRootView.current=', hasAddedRootView.current);
-        console.log('AutoPositionedPopup useEffect hasShownRootView.current=', hasShownRootView.current);
+        // Detect if keyboard state has actually changed to avoid false triggers during parent component re-renders
+        const keyboardStateChanged = prevIsKeyboardFullyShownRef.current !== isKeyboardFullyShown;
+        const propsChanged =
+          prevPropsRef.current.CustomPopView !== CustomPopView ||
+          prevPropsRef.current.CustomPopViewStyle !== CustomPopViewStyle ||
+          prevPropsRef.current.TextInputProps !== TextInputProps;
+        console.log('AutoPositionedPopup useEffect [isKeyboardFullyShown,\n' +
+          '        state.isFocus,\n' +
+          '        useTextInput,\n' +
+          '        CustomPopView,\n' +
+          '        CustomPopViewStyle,\n' +
+          '        forceRemoveAllRootViewOnItemSelected,\n' +
+          '        tag, TextInputProps,\n' +
+          '        state.selectedItem, showListEmptyComponent\n' +
+          '      ]=', {
+          tag,
+          'state.isFocus': state.isFocus,
+          isKeyboardFullyShown,
+          'ref_isFocus.current': ref_isFocus.current,
+          'ref_isKeyboardFullyShown.current': ref_isKeyboardFullyShown.current,
+          useTextInput, TextInputProps,
+          'hasAddedRootView.current': hasAddedRootView.current,
+          'hasShownRootView.current': hasShownRootView.current,
+          'keyboardStateChanged': keyboardStateChanged,
+          'propsChanged': propsChanged
+        });
+        // Update ref to record current state
+        prevIsKeyboardFullyShownRef.current = isKeyboardFullyShown;
+        prevPropsRef.current = {
+          CustomPopView,
+          CustomPopViewStyle,
+          TextInputProps
+        };
+        // Only execute logic when keyboard state actually changes or user actively operates
+        if (!keyboardStateChanged  && hasAddedRootView.current) {
+          console.log('AutoPositionedPopup: Skip execution - parent component re-rendered but keyboard state unchanged');
+          // if (!ref_isFocus.current) {
+          //   textInputRef.current?.focus()
+          // }
+          return;
+        }
         if (useTextInput) {
           if (isKeyboardFullyShown && hasAddedRootView.current && !hasShownRootView.current && state.isFocus) {
             refAutoPositionedPopup.current?.measureInWindow((x: number, y: number, width: number, height: number) => {
-              console.log('AutoPositionedPopup measureInWindow x=', x, ' y=', y, ' width=', width, ' height=', height);
+              console.log('AutoPositionedPopup useTextInput measureInWindow=', {x, y, width, height});
               // SIMPLE CENTER-BASED POSITIONING STRATEGY
               const screenHeight = Dimensions.get('screen').height;
               const screenCenter = screenHeight / 2;
-              console.log('AutoPositionedPopup screenHeight=', screenHeight, ' screenCenter=', screenCenter, ' componentY=', y);
+              console.log('AutoPositionedPopup useTextInput measureInWindow =', {screenHeight, screenCenter, componentY: y});
 
               // Simple rule: if component Y > screen center, show popup above; otherwise show below
               if (y > screenCenter) {
@@ -483,7 +519,7 @@ const AutoPositionedPopup = memo(
                 console.log('AutoPositionedPopup with keyboard: showing below (Y <= center)');
                 ref_listPos.current = {x: x, y: y + height, width: width};
               }
-              console.log('AutoPositionedPopup ref_listPos.current=', ref_listPos.current);
+              console.log('AutoPositionedPopup useTextInput ref_listPos.current=', ref_listPos.current);
               setRootViewNativeStyle(tag, {
                 top: ref_listPos.current?.y,
                 left: popUpViewStyle?.left,
@@ -493,12 +529,11 @@ const AutoPositionedPopup = memo(
               });
               hasShownRootView.current = true;
             });
-          } else if (!isKeyboardFullyShown && ref_isFocus.current) {
+          } else if (!isKeyboardFullyShown && ref_isFocus.current && keyboardStateChanged) {
+            // Only execute close logic when keyboard state actually changes from true to false
             console.log(
-              'AutoPositionedPopup isKeyboardFullyShown useEffect removeRootView tag=',
-              tag,
-              ' forceRemoveAllRootViewOnItemSelected=',
-              forceRemoveAllRootViewOnItemSelected
+              'AutoPositionedPopup isKeyboardFullyShown useEffect removeRootView (keyboard state changed)=',
+              {tag, forceRemoveAllRootViewOnItemSelected, keyboardStateChanged}
             );
             removeRootView(tag, forceRemoveAllRootViewOnItemSelected);
             setState((prevState) => {
@@ -514,11 +549,10 @@ const AutoPositionedPopup = memo(
         } else {
           if (state.isFocus) {
             refAutoPositionedPopup.current?.measureInWindow((x: number, y: number, width: number, height: number) => {
-              console.log('AutoPositionedPopup measureInWindow x=', x, ' y=', y, ' width=', width, ' height=', height);
-
+              console.log('AutoPositionedPopup !useTextInput measureInWindow=', {x, y, width, height});
               // INTELLIGENT POSITION CALCULATION - MODIFIED VERSION WITH STATUS BAR SAFETY
               const calculateOptimalPosition = (componentY: number, componentHeight: number, popupHeight: number) => {
-                console.log('🔥🔥🔥 NEW CALCULATE OPTIMAL POSITION FUNCTION EXECUTING 🔥🔥🔥');
+                console.log('AutoPositionedPopup 🔥🔥🔥 NEW CALCULATE OPTIMAL POSITION FUNCTION EXECUTING 🔥🔥🔥');
 
                 // Use window height (visible area) instead of screen height (includes status bar)
                 const windowHeight = Dimensions.get('window').height;
@@ -536,7 +570,7 @@ const AutoPositionedPopup = memo(
                   }
                 };
                 const statusBarHeight = getStatusBarHeight();
-                console.log('🔥 Cross-platform StatusBar height:', statusBarHeight, 'Platform:', Platform.OS);
+                console.log('AutoPositionedPopup 🔥 Cross-platform StatusBar height:', statusBarHeight, 'Platform:', Platform.OS);
 
                 // Calculate component center point as requested
                 const componentCenterY = componentY + componentHeight / 2;
@@ -597,7 +631,7 @@ const AutoPositionedPopup = memo(
 
                   const finalSpacing = Math.max(baseSpacing, relativeSpacing) * edgeProximityFactor * platformMultiplier;
 
-                  console.log('🔥 Advanced spacing calculation:', {
+                  console.log('AutoPositionedPopup 🔥 Advanced spacing calculation:', {
                     componentCenter,
                     screenCenter,
                     distanceFromCenter,
@@ -634,41 +668,41 @@ const AutoPositionedPopup = memo(
                 //   'usableSpaceAbove >= needed': usableSpaceAbove >= popupHeight + POPUP_SPACING
                 // });
 
-                if (isInBottomHalf && usableSpaceAbove >= popupHeight ) {
+                if (isInBottomHalf && usableSpaceAbove >= popupHeight) {
                   // Component in bottom half + enough space above = FORCE ABOVE
                   showAbove = true;
-                  finalY = componentY - popupHeight +componentHeight/2;
-                  console.log('🔥 AutoPositionedPopup: FORCE ABOVE - bottom half component with enough space, finalY=', finalY);
-                } else if (!isInBottomHalf && spaceBelow >= popupHeight ) {
+                  finalY = componentY - popupHeight + componentHeight / 2;
+                  console.log('AutoPositionedPopup 🔥 AutoPositionedPopup: FORCE ABOVE - bottom half component with enough space, finalY=', finalY);
+                } else if (!isInBottomHalf && spaceBelow >= popupHeight) {
                   // Component in top half + enough space below = show below
                   showAbove = false;
-                  finalY = componentY + componentHeight*2;
+                  finalY = componentY + componentHeight * 2;
                   console.log('🔥 AutoPositionedPopup: Showing below - top half component with enough space, finalY=', finalY);
-                } else if (usableSpaceAbove >= popupHeight ) {
+                } else if (usableSpaceAbove >= popupHeight) {
                   // Fallback: enough space above
                   showAbove = true;
-                  finalY = componentY - popupHeight ;
+                  finalY = componentY - popupHeight;
                   console.log('🔥 AutoPositionedPopup: Showing above - enough space available (fallback), finalY=', finalY);
-                } else if (spaceBelow >= popupHeight ) {
+                } else if (spaceBelow >= popupHeight) {
                   // Fallback: enough space below
                   showAbove = false;
-                  finalY = componentY + componentHeight ;
+                  finalY = componentY + componentHeight;
                   console.log('🔥 AutoPositionedPopup: Showing below - enough space available (fallback), finalY=', finalY);
                 } else {
                   // Emergency fallback: choose larger space
                   if (usableSpaceAbove >= spaceBelow) {
                     showAbove = true;
-                    finalY = Math.max(statusBarHeight, componentY - popupHeight );
+                    finalY = Math.max(statusBarHeight, componentY - popupHeight);
                     console.log('🔥 AutoPositionedPopup: Emergency above - larger space, finalY=', finalY);
                   } else {
                     showAbove = false;
-                    finalY = componentY + componentHeight ;
+                    finalY = componentY + componentHeight;
                     console.log('🔥 AutoPositionedPopup: Emergency below - larger space, finalY=', finalY);
                   }
                 }
 
                 // Enhanced boundary check with detailed logging
-                console.log('🔥 Pre-boundary check:', {
+                console.log('AutoPositionedPopup 🔥 Pre-boundary check:', {
                   originalFinalY: finalY,
                   showAbove,
                   statusBarHeight,
@@ -681,25 +715,25 @@ const AutoPositionedPopup = memo(
                 if (showAbove && finalY < statusBarHeight) {
                   const oldFinalY = finalY;
                   finalY = statusBarHeight;
-                  console.log('🔥 BOUNDARY FIX: Above display adjusted for status bar:', oldFinalY, '->', finalY);
+                  console.log('AutoPositionedPopup 🔥 BOUNDARY : Above display adjusted for status bar:', oldFinalY, '->', finalY);
                 }
 
                 if (!showAbove && finalY + popupHeight > windowHeight) {
                   const oldFinalY = finalY;
                   finalY = windowHeight - popupHeight;
-                  console.log('🔥 BOUNDARY FIX: Below display adjusted to fit window:', oldFinalY, '->', finalY);
+                  console.log('AutoPositionedPopup 🔥 BOUNDARY : Below display adjusted to fit window:', oldFinalY, '->', finalY);
                 }
 
                 // CRITICAL CHECK: Detect if boundary check is changing display direction
-                if (showAbove && finalY + popupHeight > componentY ) {
-                  console.log('🚨 WARNING: Above positioning may overlap with component!');
+                if (showAbove && finalY + popupHeight > componentY) {
+                  console.log('AutoPositionedPopup 🚨 WARNING: Above positioning may overlap with component!');
                 }
 
-                if (!showAbove && finalY < componentY + componentHeight ) {
-                  console.log('🚨 WARNING: Below positioning may overlap with component!');
+                if (!showAbove && finalY < componentY + componentHeight) {
+                  console.log('AutoPositionedPopup 🚨 WARNING: Below positioning may overlap with component!');
                 }
 
-                console.log('🔥 Post-boundary check final result:', {
+                console.log('AutoPositionedPopup 🔥 Post-boundary check final result:', {
                   finalY,
                   showAbove,
                   'popupTop': finalY,
@@ -715,21 +749,15 @@ const AutoPositionedPopup = memo(
               const actualPopupHeight = CustomPopView && CustomPopViewStyle && typeof CustomPopViewStyle.height === 'number'
                 ? CustomPopViewStyle.height
                 : listLayout.height;
-
-              console.log('🔥 Using actualPopupHeight for calculation:', actualPopupHeight, 'CustomPopView:', !!CustomPopView);
-
+              console.log('AutoPositionedPopup 🔥 Using actualPopupHeight for calculation:', {actualPopupHeight, CustomPopView: !!CustomPopView});
               const positionResult = calculateOptimalPosition(y, height, actualPopupHeight);
               console.log('AutoPositionedPopup FINAL position result:', positionResult);
-
               ref_listPos.current = {x: x, y: positionResult.finalY, width: width};
-              console.log('AutoPositionedPopup ref_listPos.current=', ref_listPos.current);
-
+              console.log('AutoPositionedPopup !useTextInput ref_listPos.current=', ref_listPos.current);
               if (CustomPopView && CustomPopViewStyle) {
-                console.log('AutoPositionedPopup CustomPopViewStyle=', CustomPopViewStyle);
                 // Position already calculated correctly above, no need to recalculate
                 const PopViewComponent = CustomPopView();
-                console.log('AutoPositionedPopup addRootView PopViewComponent=', PopViewComponent);
-                console.log('AutoPositionedPopup addRootView state.selectedItem=', state.selectedItem);
+                console.log('AutoPositionedPopup !useTextInput addRootView=', {CustomPopViewStyle, PopViewComponent, 'state.selectedItem': state.selectedItem});
                 addRootView({
                   id: tag,
                   style: !centerDisplay
@@ -761,7 +789,7 @@ const AutoPositionedPopup = memo(
                   centerDisplay,
                 });
               } else {
-                console.log('AutoPositionedPopup addRootView tag=', tag);
+                console.log('AutoPositionedPopup !useTextInput addRootView tag=', tag);
                 addRootView({
                   id: tag,
                   style: {
@@ -817,8 +845,8 @@ const AutoPositionedPopup = memo(
         CustomPopView,
         CustomPopViewStyle,
         forceRemoveAllRootViewOnItemSelected,
-        tag,
-        state.selectedItem,showListEmptyComponent
+        tag, TextInputProps,
+        state.selectedItem, showListEmptyComponent
       ]);
       // Imperative handle for parent component access
       useImperativeHandle(
@@ -837,7 +865,7 @@ const AutoPositionedPopup = memo(
         []
       );
       const updateState = (key: string, value: SelectedItem) => {
-        console.log('AutoPositionedPopup updateState key=', key, ' value=', value);
+        console.log('AutoPositionedPopup updateState=', {key, value});
         setState((prevState) => ({
           ...prevState,
           [key]: value,
@@ -858,6 +886,225 @@ const AutoPositionedPopup = memo(
           setSearchQuery('');
         }
       };
+
+      // Simple deep comparison function (for style objects only)
+      const shallowEqual = (obj1: any, obj2: any): boolean => {
+        if (obj1 === obj2) return true;
+        if (!obj1 || !obj2) return false;
+        if (typeof obj1 !== 'object' || typeof obj2 !== 'object') return false;
+
+        const keys1 = Object.keys(obj1);
+        const keys2 = Object.keys(obj2);
+        if (keys1.length !== keys2.length) return false;
+
+        for (const key of keys1) {
+          if (obj1[key] !== obj2[key]) return false;
+        }
+        return true;
+      };
+
+      // Use useMemo to create stable props reference
+      // Only update when deep comparison detects real changes to avoid TextInput recreation due to reference changes during parent component redraws
+      const stableInputStyle = useMemo(() => {
+        if (!shallowEqual(stableInputStyleRef.current, inputStyle)) {
+          console.log(`AutoPositionedPopup inputStyle deep change detected, updating stable reference - tag: ${tag}`);
+          stableInputStyleRef.current = inputStyle;
+        }
+        return stableInputStyleRef.current;
+      }, [inputStyle, tag]);
+
+      const stableTextInputProps = useMemo(() => {
+        if (!shallowEqual(stableTextInputPropsRef.current, TextInputProps)) {
+          console.log(`AutoPositionedPopup TextInputProps deep change detected, updating stable reference - tag: ${tag}`);
+          stableTextInputPropsRef.current = TextInputProps;
+        }
+        return stableTextInputPropsRef.current;
+      }, [TextInputProps, tag]);
+
+      // Use useCallback to stabilize onFocus and onBlur callback references
+      // Prevent creating new callback functions during parent component redraws to avoid TextInput re-triggering focus
+      // Use ref to store latest state values to avoid adding frequently changing values to dependencies
+      const stateRef = useRef(state);
+      stateRef.current = state;
+
+      const handleTextInputFocus = useCallback(() => {
+        const currentTime = Date.now();
+        const timeSinceLastFocus = currentTime - lastFocusTimeRef.current;
+        console.log(
+          'AutoPositionedPopup onFocus=',
+          {
+            tag,
+            'state.selectedItem': stateRef.current.selectedItem,
+            'hasTriggeredFocus.current=': hasTriggeredFocus.current,
+            'textInputRef.current=': textInputRef.current,
+            'ref_searchQuery.current=': ref_searchQuery.current,
+            'timeSinceLastFocus': timeSinceLastFocus,
+            'isKeyboardFullyShown': isKeyboardFullyShown,
+            'isFocusEventProcessing': isFocusEventProcessingRef.current
+          }
+        );
+        // Prevent rapid repeated triggers (repeated events within 300ms are ignored)
+        if (timeSinceLastFocus < 300) {
+          console.log('AutoPositionedPopup onFocus: Skip - event triggered too quickly (< 300ms)');
+          return;
+        }
+        // Skip if keyboard is already open and focus has been handled
+        if (isKeyboardFullyShown && hasTriggeredFocus.current) {
+          console.log('AutoPositionedPopup onFocus: Skip - keyboard already open and focus handled');
+          return;
+        }
+        // Prevent concurrent processing
+        if (isFocusEventProcessingRef.current) {
+          console.log('AutoPositionedPopup onFocus: Skip - processing another focus event');
+          return;
+        }
+        isFocusEventProcessingRef.current = true;
+        lastFocusTimeRef.current = currentTime;
+        if (!hasTriggeredFocus.current) {
+          hasTriggeredFocus.current = true;
+          ref_isFocus.current = true;
+          if (stateRef.current.selectedItem) {
+            ref_searchQuery.current = stateRef.current.selectedItem.title;
+          }
+          if (textInputRef.current && ref_searchQuery.current) {
+            textInputRef.current.setNativeProps({
+              text: ref_searchQuery.current,
+            });
+          }
+        }
+        // Delay resetting processing flag to avoid blocking subsequent legitimate focus events
+        setTimeout(() => {
+          isFocusEventProcessingRef.current = false;
+        }, 100);
+      }, [tag, isKeyboardFullyShown]); // Remove state.selectedItem, use stateRef instead
+
+      const handleTextInputBlur = useCallback(() => {
+        console.log(
+          'AutoPositionedPopup onBlur=',
+          {
+            tag,
+            'textInputRef.current': textInputRef.current,
+            'isKeyboardFullyShown': isKeyboardFullyShown,
+            'hasTriggeredFocus.current': hasTriggeredFocus.current
+          }
+        );
+        // If keyboard is still open, this is a false trigger caused by parent component re-render, should not reset
+        if (isKeyboardFullyShown && hasTriggeredFocus.current) {
+          console.log('AutoPositionedPopup onBlur: Skip - keyboard still open, possibly caused by parent component re-render');
+          return;
+        }
+
+        // Only reset internal state, do not actively close keyboard
+        // Keyboard will close naturally when TextInput loses focus, no need to manually call Keyboard.dismiss()
+        hasTriggeredFocus.current = false;
+        hasAddedRootView.current = false;
+        hasShownRootView.current = false;
+        ref_isFocus.current = false;
+        setState((prevState) => {
+          return {
+            ...prevState,
+            isFocus: false,
+          };
+        });
+        removeRootView(tag, forceRemoveAllRootViewOnItemSelected);
+        setSearchQuery('');
+        if (textInputRef.current) {
+          textInputRef.current.setNativeProps({text: ''});
+          ref_searchQuery.current = '';
+          // Remove textInputRef.current.blur() - avoid forcing blur causing keyboard to close
+        }
+        // Remove Keyboard.dismiss() - let keyboard close naturally to avoid triggering keyboardDidHide event
+      }, [tag, isKeyboardFullyShown, forceRemoveAllRootViewOnItemSelected]);
+
+      // Wrap TextInput independently in useMemo to recreate only when key props change
+      // This avoids repeated ref callback triggers due to other props changes during parent component redraws
+      const memoizedTextInput = useMemo(() => {
+        console.log(`AutoPositionedPopup useMemo creating TextInput - tag: ${tag}, isFocus: ${state.isFocus}`);
+        if (!useTextInput || !state.isFocus) {
+          return null;
+        }
+        return (
+          <RNTextInput
+            ref={(ref) => {
+              // Monitor TextInput mounting and unmounting
+              if (ref && !textInputRef.current) {
+                console.log(`AutoPositionedPopup TextInput created/mounted - tag: ${tag}, ref:`, ref);
+              } else if (!ref && textInputRef.current) {
+                console.log(`AutoPositionedPopup TextInput unmounted - tag: ${tag}`);
+              } else if (ref && textInputRef.current && ref !== textInputRef.current) {
+                console.log(`AutoPositionedPopup TextInput replaced - tag: ${tag}, oldRef:`, textInputRef.current, 'newRef:', ref);
+              }
+              textInputRef.current = ref;
+            }}
+            key={`textinput-${tag}`}
+            style={[
+              styles.inputStyle,
+              stableInputStyle,
+            ]}
+            textAlign={stableTextInputProps['textAlign'] || 'left'}
+            multiline={stableTextInputProps['multiline'] || false}
+            numberOfLines={stableTextInputProps['numberOfLines'] || 1}
+            onChangeText={(searchQuery) => {
+              ref_searchQuery.current = searchQuery;
+              console.log('AutoPositionedPopup onChangeText rootViews=', rootViews);
+              if (!localSearch) {
+                if (debounceTimerRef.current) {
+                  clearTimeout(debounceTimerRef.current);
+                }
+                debounceTimerRef.current = setTimeout(() => {
+                  emitQueryChange(ref_searchQuery.current);
+                }, 500);
+              } else {
+                emitQueryChange(ref_searchQuery.current);
+              }
+            }}
+            placeholderTextColor={theme.colors.placeholderText}
+            placeholder={placeholder}
+            onKeyPress={(e) => {
+              if (e.nativeEvent.key === 'Enter') {
+                Keyboard.dismiss();
+              }
+            }}
+            keyboardType={stableTextInputProps['keyboardType'] || 'default'}
+            clearButtonMode="while-editing"
+            returnKeyType={stableTextInputProps['returnKeyType'] || 'done'}
+            maxLength={stableTextInputProps['maxLength'] || 100}
+            accessibilityLabel="selectInput"
+            accessible={true}
+            autoFocus={stableTextInputProps['autoFocus'] || false}
+            autoCorrect={false}
+            underlineColorAndroid="transparent"
+            editable={stableTextInputProps['editable'] || true}
+            secureTextEntry={stableTextInputProps['secureTextEntry'] || false}
+            defaultValue=""
+            caretHidden={false}
+            enablesReturnKeyAutomatically
+            onFocus={handleTextInputFocus}
+            onBlur={handleTextInputBlur}
+            selectTextOnFocus={stableTextInputProps['selectTextOnFocus'] || false}
+            onSubmitEditing={(e: NativeSyntheticEvent<TextInputSubmitEditingEventData>) => {
+              console.log(
+                'AutoPositionedPopup.tsx onSubmitEditing e.nativeEvent.text=',
+                e.nativeEvent.text
+              );
+              onSubmitEditing && onSubmitEditing(e);
+            }}
+          />
+        );
+      }, [
+        tag, // tag 是稳定的
+        useTextInput, // useTextInput 是稳定的
+        state.isFocus, // isFocus 控制显示/隐藏
+        handleTextInputFocus, // useCallback wrapped, reference stable
+        handleTextInputBlur, // useCallback wrapped, reference stable
+        stableInputStyle, // Use stable inputStyle reference (after deep comparison)
+        stableTextInputProps, // Use stable TextInputProps reference (after deep comparison)
+        placeholder, // placeholder usually stable
+        onSubmitEditing, // onSubmitEditing usually stable
+        // No longer use original inputStyle and TextInputProps, use stable references instead
+        // Stable references only update when deep comparison detects actual content changes, avoiding frequent TextInput recreation during parent component redraws
+      ]);
+
       // Render the component following project implementation
       return useMemo(() => {
         console.log('AutoPositionedPopup render tag=', tag); // Now safe - circular dependency fixed
@@ -869,22 +1116,15 @@ const AutoPositionedPopup = memo(
                   style={[styles.AutoPositionedPopupBtn, AutoPositionedPopupBtnStyle]}
                   disabled={AutoPositionedPopupBtnDisabled}
                   onPress={() => {
-                    console.log('AutoPositionedPopup onPress tag=', tag);
-                    console.log('AutoPositionedPopup onPress state.isFocus=', state.isFocus);
-                    console.log('AutoPositionedPopup onPress useTextInput=', useTextInput);
-                    console.log(
-                      'AutoPositionedPopup onPress hasAddedRootView.current=',
-                      hasAddedRootView.current
-                    );
-                    console.log(
-                      'AutoPositionedPopup onPress hasShownRootView.current=',
-                      hasShownRootView.current
-                    );
-                    console.log(
-                      'AutoPositionedPopup onPress hasTriggeredFocus.current=',
-                      hasTriggeredFocus.current
-                    );
-                    console.log('AutoPositionedPopup onPress state.selectedItem=', state.selectedItem);
+                    console.log('AutoPositionedPopup onPress=', {
+                      tag,
+                      'state.isFocus': state.isFocus,
+                      useTextInput,
+                      'hasAddedRootView.current': hasAddedRootView.current,
+                      'hasShownRootView.current': hasShownRootView.current,
+                      'hasTriggeredFocus.current': hasTriggeredFocus.current,
+                      'state.selectedItem': state.selectedItem
+                    });
                     setState((prevState) => {
                       return {
                         ...prevState,
@@ -892,6 +1132,7 @@ const AutoPositionedPopup = memo(
                       };
                     });
                     if (!hasAddedRootView.current && useTextInput) {
+                      // TextInput version: hide first, show after keyboard is fully displayed
                       hasAddedRootView.current = true;
                       hasShownRootView.current = false;
                       addRootView({
@@ -919,6 +1160,7 @@ const AutoPositionedPopup = memo(
                         useModal: false,
                       });
                     }
+                    console.log('AutoPositionedPopup onPress done')
                   }}
                 >
                   {!btwChildren ? (
@@ -938,141 +1180,38 @@ const AutoPositionedPopup = memo(
                   )}
                 </TouchableOpacity>
               ) : (
-                useTextInput &&
-                state.isFocus && (
-                  <RNTextInput
-                    ref={textInputRef}
-                    key="fixed-textinput-key"
-                    style={[
-                      styles.inputStyle,
-                      inputStyle,
-                    ]}
-                    textAlign={TextInputProps['textAlign'] || 'left'}
-                    multiline={TextInputProps['multiline'] || false}
-                    numberOfLines={TextInputProps['numberOfLines'] || 1}
-                    onChangeText={(searchQuery) => {
-                      ref_searchQuery.current = searchQuery;
-                      console.log('AutoPositionedPopup onChangeText rootViews=', rootViews);
-                      if (!localSearch) {
-                        if (debounceTimerRef.current) {
-                          clearTimeout(debounceTimerRef.current);
-                        }
-                        debounceTimerRef.current = setTimeout(() => {
-                          emitQueryChange(ref_searchQuery.current);
-                        }, 500);
-                      } else {
-                        emitQueryChange(ref_searchQuery.current);
-                      }
-                    }}
-                    placeholderTextColor={theme.colors.placeholderText}
-                    placeholder={placeholder}
-                    onKeyPress={(e) => {
-                      if (e.nativeEvent.key === 'Enter') {
-                        Keyboard.dismiss();
-                      }
-                    }}
-                    keyboardType={TextInputProps['keyboardType'] || 'default'}
-                    clearButtonMode="while-editing"
-                    returnKeyType={TextInputProps['returnKeyType'] || 'done'}
-                    maxLength={TextInputProps['maxLength'] || 100}
-                    accessibilityLabel="selectInput"
-                    accessible={true}
-                    autoFocus={TextInputProps['autoFocus'] || false}
-                    autoCorrect={false}
-                    underlineColorAndroid="transparent"
-                    editable={TextInputProps['editable'] || true}
-                    secureTextEntry={TextInputProps['secureTextEntry'] || false}
-                    defaultValue=""
-                    caretHidden={false}
-                    enablesReturnKeyAutomatically
-                    onFocus={() => {
-                      console.log(
-                        'AutoPositionedPopup onFocus tag=',
-                        tag,
-                        ' selectedItem=',
-                        state.selectedItem,
-                        ' hasTriggeredFocus.current=',
-                        hasTriggeredFocus.current,
-                        ' textInputRef.current=',
-                        textInputRef.current,
-                        ' ref_searchQuery.current=',
-                        ref_searchQuery.current
-                      );
-                      if (!hasTriggeredFocus.current) {
-                        hasTriggeredFocus.current = true;
-                        ref_isFocus.current = true;
-                        if (state.selectedItem) {
-                          ref_searchQuery.current = state.selectedItem.title;
-                        }
-                        if (textInputRef.current && ref_searchQuery.current) {
-                          textInputRef.current.setNativeProps({
-                            text: ref_searchQuery.current,
-                          });
-                        }
-                      }
-                    }}
-                    onBlur={() => {
-                      console.log(
-                        'AutoPositionedPopup onBlur tag=',
-                        tag,
-                        'textInputRef.current=',
-                        textInputRef.current
-                      );
-                      hasTriggeredFocus.current = false;
-                      hasAddedRootView.current = false; // 重置 RootView 狀態
-                      hasShownRootView.current = false;
-                      ref_isFocus.current = false;
-                      setState((prevState) => {
-                        return {
-                          ...prevState,
-                          isFocus: false,
-                        };
-                      });
-                      removeRootView(tag, forceRemoveAllRootViewOnItemSelected);
-                      setSearchQuery('');
-                      if (textInputRef.current) {
-                        textInputRef.current.setNativeProps({text: ''});
-                        ref_searchQuery.current = '';
-                        textInputRef.current.blur();
-                      }
-                      Keyboard.dismiss();
-                    }}
-                    selectTextOnFocus={TextInputProps['selectTextOnFocus'] || false}
-                    onSubmitEditing={(e: NativeSyntheticEvent<TextInputSubmitEditingEventData>) => {
-                      console.log(
-                        'AutoPositionedPopup.tsx onSubmitEditing e.nativeEvent.text=',
-                        e.nativeEvent.text
-                      );
-                      onSubmitEditing && onSubmitEditing(e);
-                    }}
-                  />
-                )
+                memoizedTextInput
               )}
             </View>
           </CustomRow>
         );
-      }, [tag,
-        fetchData,
-        renderItem,
-        onItemSelected,
-        onSubmitEditing,
+      }, [
+        tag,
+        // ✅ CRITICAL FIX: Remove all props that may change frequently or are inline functions
+        // Changes to these props should not cause the entire component tree to recreate, especially TextInput
+        // fetchData,  // ❌ Removed: inline function
+        // renderItem,  // ❌ Removed: possibly inline function
+        // onItemSelected,  // ❌ Removed: possibly inline function
+        // onSubmitEditing,  // ❌ Removed: possibly inline function
         localSearch,
-        placeholder,
-        textAlign,
+        // placeholder,  // ❌ Removed: may change
+        // textAlign,  // ❌ Removed: may change
         pageSize,
         selectedItem,
-        CustomRow,
+        // CustomRow,  // ❌ Removed: inline function, new reference each time
         useTextInput,
-        btwChildren,
-        selectedItem,
-        keyExtractor,
-        AutoPositionedPopupBtnStyle,
-        CustomPopView,
-        CustomPopViewStyle,
+        // btwChildren,  // ❌ Removed: inline function
+        // keyExtractor,  // ❌ Removed: possibly inline function
+        // AutoPositionedPopupBtnStyle,  // ❌ Removed: possibly inline object
+        // CustomPopView,  // ❌ Removed: may change
+        // CustomPopViewStyle,  // ❌ Removed: may change
         forceRemoveAllRootViewOnItemSelected,
-        inputStyle,
-        TextInputProps,
-        state.isFocus,showListEmptyComponent,emptyText]);
+        state.isFocus,
+        showListEmptyComponent,
+        emptyText,
+        // ✅ Removed most dependencies that may cause re-rendering, keeping only core dependencies that truly affect component structure
+        // This prevents TextInput recreation due to inline functions/objects during parent component redraws
+      ]);
     }
   )
 );
