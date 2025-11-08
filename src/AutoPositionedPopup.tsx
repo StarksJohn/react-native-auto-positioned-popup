@@ -902,6 +902,8 @@ const AutoPositionedPopup = memo(
                 selectedItem: undefined,
               };
             });
+            textInputRef.current?.setNativeProps({text: ''});
+            ref_searchQuery.current = '';
           },
         }),
         []
