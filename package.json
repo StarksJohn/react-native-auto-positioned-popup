@@ -1,6 +1,6 @@
 {
   "name": "react-native-auto-positioned-popup",
-  "version": "1.0.14",
+  "version": "1.0.15",
   "description": "A highly customizable React Native auto-positioned popup component with search functionality and flexible styling options",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
