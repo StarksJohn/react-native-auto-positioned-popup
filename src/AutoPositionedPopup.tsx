@@ -355,7 +355,7 @@ const AutoPositionedPopup = memo(
         centerDisplay = false,
         selectedItemBackgroundColor = 'rgba(116, 116, 128, 0.08)',
         textAlign = 'right',
-        CustomPopView = undefined, CustomPopViewStyle, showListEmptyComponent = true, emptyText = ''
+        CustomPopView = undefined, CustomPopViewStyle, showListEmptyComponent = true, emptyText = '',onChangeText
       } = props;
       // State management similar to project implementation
       const [state, setState] = useState<StateProps>({
@@ -899,11 +899,19 @@ const AutoPositionedPopup = memo(
             setState((prevState) => {
               return {
                 ...prevState,
-                selectedItem: undefined,
+                selectedItem: undefined,isFocus: false,
               };
             });
-            textInputRef.current?.setNativeProps({text: ''});
             ref_searchQuery.current = '';
+            hasTriggeredFocus.current = false;
+            hasAddedRootView.current = false;
+            hasShownRootView.current = false;
+            ref_isFocus.current = false;
+            removeRootView(tag, forceRemoveAllRootViewOnItemSelected);
+            setSearchQuery('');
+            if (textInputRef.current) {
+              textInputRef.current.setNativeProps({text: ''});
+            }
           },
         }),
         []
@@ -1097,9 +1105,11 @@ const AutoPositionedPopup = memo(
                 }
                 debounceTimerRef.current = setTimeout(() => {
                   emitQueryChange(ref_searchQuery.current);
+                  onChangeText && onChangeText(ref_searchQuery.current)
                 }, 500);
               } else {
                 emitQueryChange(ref_searchQuery.current);
+                onChangeText && onChangeText(ref_searchQuery.current)
               }
             }}
             placeholderTextColor={theme.colors.placeholderText}

@@ -66,4 +66,5 @@ export interface AutoPositionedPopupProps {
   selectedItemBackgroundColor?: string;
   showListEmptyComponent?:boolean;
   emptyText?:string;
+  onChangeText?: ((text: string) => void) | undefined;
 }
