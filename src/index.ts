@@ -14,3 +14,7 @@ export { default as AutoPositionedPopupStyles } from './AutoPositionedPopup.styl
 
 // RootView exports
 export { RootViewProvider, useRootView } from './RootViewContext';
+
+// Event name constants export
+export { AutoPositionedPopupEventNames } from './constants';
+export type { AutoPositionedPopupEventName } from './constants';
