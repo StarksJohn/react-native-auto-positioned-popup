@@ -313,7 +313,7 @@ const AutoPositionedPopup = memo(
         AutoPositionedPopupBtnStyle,
         placeholder = 'Please Select',
         onSubmitEditing,
-        TextInputProps = {autoFocus: true},
+        TextInputProps,//= {autoFocus: true},
         inputStyle,
         labelStyle,
         popUpViewStyle = {left: '5%', width: '90%'},
@@ -355,7 +355,7 @@ const AutoPositionedPopup = memo(
         centerDisplay = false,
         selectedItemBackgroundColor = 'rgba(116, 116, 128, 0.08)',
         textAlign = 'right',
-        CustomPopView = undefined, CustomPopViewStyle, showListEmptyComponent = true, emptyText = '',onChangeText
+        CustomPopView = undefined, CustomPopViewStyle, showListEmptyComponent = true, emptyText = '', onChangeText
       } = props;
       // State management similar to project implementation
       const [state, setState] = useState<StateProps>({
@@ -466,7 +466,7 @@ const AutoPositionedPopup = memo(
         const propsChanged =
           prevPropsRef.current.CustomPopView !== CustomPopView ||
           prevPropsRef.current.CustomPopViewStyle !== CustomPopViewStyle ||
-          prevPropsRef.current.TextInputProps !== TextInputProps;
+          (prevPropsRef.current.TextInputProps !== TextInputProps && useTextInput);
         console.log('AutoPositionedPopup useEffect [isKeyboardFullyShown,\n' +
           '        state.isFocus,\n' +
           '        useTextInput,\n' +
@@ -485,7 +485,10 @@ const AutoPositionedPopup = memo(
           'hasAddedRootView.current': hasAddedRootView.current,
           'hasShownRootView.current': hasShownRootView.current,
           'keyboardStateChanged': keyboardStateChanged,
-          'propsChanged': propsChanged
+          'propsChanged': propsChanged,
+          'prevPropsRef.current.CustomPopView !== CustomPopView': prevPropsRef.current.CustomPopView !== CustomPopView,
+          'prevPropsRef.current.CustomPopViewStyle !== CustomPopViewStyle': prevPropsRef.current.CustomPopViewStyle !== CustomPopViewStyle,
+          'prevPropsRef.current.TextInputProps !== TextInputProps': prevPropsRef.current.TextInputProps !== TextInputProps
         });
         // Update ref to record current state
         prevIsKeyboardFullyShownRef.current = isKeyboardFullyShown;
@@ -495,8 +498,8 @@ const AutoPositionedPopup = memo(
           TextInputProps
         };
         // Only execute logic when keyboard state actually changes or user actively operates
-        if (!keyboardStateChanged  && hasAddedRootView.current) {
-          console.log('AutoPositionedPopup: Skip execution - parent component re-rendered but keyboard state unchanged textInputRef.current=',textInputRef.current);
+        if (!keyboardStateChanged && hasAddedRootView.current) {
+          console.log('AutoPositionedPopup: Skip execution - parent component re-rendered but keyboard state unchanged textInputRef.current=', textInputRef.current);
           // if (!ref_isFocus.current) {
           //   textInputRef.current?.focus()
           // }
@@ -899,7 +902,7 @@ const AutoPositionedPopup = memo(
             setState((prevState) => {
               return {
                 ...prevState,
-                selectedItem: undefined,isFocus: false,
+                selectedItem: undefined, isFocus: false,
               };
             });
             ref_searchQuery.current = '';
@@ -970,6 +973,7 @@ const AutoPositionedPopup = memo(
           console.log(`AutoPositionedPopup TextInputProps deep change detected, updating stable reference - tag: ${tag}`);
           stableTextInputPropsRef.current = TextInputProps;
         }
+        console.log('AutoPositionedPopup stableTextInputProps=', {tag, TextInputProps, 'stableTextInputPropsRef.current': stableTextInputPropsRef.current})
         return stableTextInputPropsRef.current;
       }, [TextInputProps, tag]);
 
@@ -1071,7 +1075,7 @@ const AutoPositionedPopup = memo(
       // Wrap TextInput independently in useMemo to recreate only when key props change
       // This avoids repeated ref callback triggers due to other props changes during parent component redraws
       const memoizedTextInput = useMemo(() => {
-        console.log(`AutoPositionedPopup useMemo creating TextInput - tag: ${tag}, isFocus: ${state.isFocus}`);
+        console.log('AutoPositionedPopup memoizedTextInput=', {tag, useTextInput, 'state.isFocus': state.isFocus, stableTextInputProps});
         if (!useTextInput || !state.isFocus) {
           return null;
         }
@@ -1093,9 +1097,9 @@ const AutoPositionedPopup = memo(
               styles.inputStyle,
               stableInputStyle,
             ]}
-            textAlign={stableTextInputProps['textAlign'] || 'left'}
-            multiline={stableTextInputProps['multiline'] || false}
-            numberOfLines={stableTextInputProps['numberOfLines'] || 1}
+            textAlign={stableTextInputProps && stableTextInputProps['textAlign'] || 'left'}
+            multiline={stableTextInputProps && stableTextInputProps['multiline'] || false}
+            numberOfLines={stableTextInputProps && stableTextInputProps['numberOfLines'] || 1}
             onChangeText={(searchQuery) => {
               ref_searchQuery.current = searchQuery;
               console.log('AutoPositionedPopup onChangeText rootViews=', rootViews);
@@ -1119,23 +1123,23 @@ const AutoPositionedPopup = memo(
                 Keyboard.dismiss();
               }
             }}
-            keyboardType={stableTextInputProps['keyboardType'] || 'default'}
+            keyboardType={stableTextInputProps && stableTextInputProps['keyboardType'] || 'default'}
             clearButtonMode="while-editing"
-            returnKeyType={stableTextInputProps['returnKeyType'] || 'done'}
-            maxLength={stableTextInputProps['maxLength'] || 100}
+            returnKeyType={stableTextInputProps && stableTextInputProps['returnKeyType'] || 'done'}
+            maxLength={stableTextInputProps && stableTextInputProps['maxLength'] || 100}
             accessibilityLabel="selectInput"
             accessible={true}
-            autoFocus={stableTextInputProps['autoFocus'] || false}
+            autoFocus={stableTextInputProps && stableTextInputProps['autoFocus'] || true}
             autoCorrect={false}
             underlineColorAndroid="transparent"
-            editable={stableTextInputProps['editable'] || true}
-            secureTextEntry={stableTextInputProps['secureTextEntry'] || false}
+            editable={stableTextInputProps && stableTextInputProps['editable'] || true}
+            secureTextEntry={stableTextInputProps && stableTextInputProps['secureTextEntry'] || false}
             defaultValue=""
             caretHidden={false}
             enablesReturnKeyAutomatically
             onFocus={handleTextInputFocus}
             onBlur={handleTextInputBlur}
-            selectTextOnFocus={stableTextInputProps['selectTextOnFocus'] || false}
+            selectTextOnFocus={stableTextInputProps && stableTextInputProps['selectTextOnFocus'] || false}
             onSubmitEditing={(e: NativeSyntheticEvent<TextInputSubmitEditingEventData>) => {
               console.log(
                 'AutoPositionedPopup.tsx onSubmitEditing e.nativeEvent.text=',

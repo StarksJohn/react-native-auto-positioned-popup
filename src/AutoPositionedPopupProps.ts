@@ -1,7 +1,7 @@
 import React from 'react';
-import { StyleProp, TextInputProps, TextStyle, ViewStyle } from 'react-native';
-import { TextInputSubmitEditingEventData } from 'react-native/Libraries/Components/TextInput/TextInput';
-import { NativeSyntheticEvent } from 'react-native/Libraries/Types/CoreEventTypes';
+import {StyleProp, TextInputProps, TextStyle, ViewStyle} from 'react-native';
+import {TextInputSubmitEditingEventData} from 'react-native/Libraries/Components/TextInput/TextInput';
+import {NativeSyntheticEvent} from 'react-native/Libraries/Types/CoreEventTypes';
 
 export interface Data {
   items: any[];
@@ -31,7 +31,7 @@ export interface AutoPositionedPopupProps {
     pageSize: number;
     searchQuery?: string;
   }) => Promise<Data | null>;
-  renderItem?: ({ item, index }: { item: SelectedItem; index: number }) => React.ReactElement;
+  renderItem?: ({item, index}: { item: SelectedItem; index: number }) => React.ReactElement;
   onItemSelected?: (item: SelectedItem) => void;
   onSubmitEditing?: (e: NativeSyntheticEvent<TextInputSubmitEditingEventData>) => void;
   localSearch?: boolean;
@@ -39,7 +39,28 @@ export interface AutoPositionedPopupProps {
   textAlign?: 'left' | 'center' | 'right' | undefined;
   pageSize?: number;
   selectedItem?: SelectedItem | any;
+  /**
+   *  CustomRow={
+   *                     ({children}: ViewStyle & { children?: React.ReactNode }) => {
+   *                       return (
+   *                         <View style={}>
+   *                           {children}
+   *                         </View>
+   *                       );
+   *                     }
+   *                   }
+   */
   CustomRow?: React.ComponentType<ViewStyle & { children?: React.ReactNode }>;
+  /**
+   *  btwChildren={
+   *                     () => {
+   *                       return (
+   *                         <>
+   *                         </>
+   *                       );
+   *                     }
+   *                   }
+   */
   btwChildren?: () => React.ReactNode;
   useTextInput?: boolean;
   keyExtractor?: (item: SelectedItem) => string;
@@ -64,7 +85,7 @@ export interface AutoPositionedPopupProps {
   AutoPositionedPopupBtnDisabled?: boolean;
   centerDisplay?: boolean;
   selectedItemBackgroundColor?: string;
-  showListEmptyComponent?:boolean;
-  emptyText?:string;
+  showListEmptyComponent?: boolean;
+  emptyText?: string;
   onChangeText?: ((text: string) => void) | undefined;
 }
