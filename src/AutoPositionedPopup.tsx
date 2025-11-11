@@ -89,7 +89,7 @@ const ListItem: React.FC<{
     }, [rootViews]);
     return useMemo(() => {
       // console.log('AutoPositionedPopup.tsx ListItem=', {index, item, selectedItem});
-      const isSelected = item.id === selectedItem?.id;
+      const isSelected = item.id === selectedItem?.id || item.title === selectedItem?.title;
       return (
         <TouchableOpacity
           key={item.id}
@@ -431,7 +431,7 @@ const AutoPositionedPopup = memo(
         };
       }, []);
       useEffect(() => {
-        console.log('AutoPositionedPopup rootViews=', rootViews);
+        console.log('AutoPositionedPopup rootViews=', {tag,rootViews});
         rootViewsRef.current = rootViews;
         if (rootViews.length === 0) {
           hasAddedRootView.current = false;
@@ -1044,7 +1044,7 @@ const AutoPositionedPopup = memo(
                       'hasAddedRootView.current': hasAddedRootView.current,
                       'hasShownRootView.current': hasShownRootView.current,
                       'hasTriggeredFocus.current': hasTriggeredFocus.current,
-                      'state.selectedItem': state.selectedItem
+                      'selectedItem': selectedItem
                     });
                     {
                       setState((prevState) => {
@@ -1074,7 +1074,7 @@ const AutoPositionedPopup = memo(
                             fetchData={fetchData}
                             pageSize={pageSize}
                             renderItem={renderItem}
-                            selectedItem={state.selectedItem}
+                            selectedItem={selectedItem}
                             localSearch={localSearch}
                             showListEmptyComponent={showListEmptyComponent}
                             emptyText={emptyText}
