@@ -36,7 +36,7 @@ export interface AutoPositionedPopupProps {
   onSubmitEditing?: (e: NativeSyntheticEvent<TextInputSubmitEditingEventData>) => void;
   localSearch?: boolean;
   placeholder?: string;
-  textAlign?: 'left' | 'center' | 'right' | undefined;
+  // textAlign?: 'left' | 'center' | 'right' | undefined;
   pageSize?: number;
   selectedItem?: SelectedItem | any;
   /**

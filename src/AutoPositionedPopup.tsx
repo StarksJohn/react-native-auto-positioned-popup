@@ -354,7 +354,7 @@ const AutoPositionedPopup = memo(
         forceRemoveAllRootViewOnItemSelected = false,
         centerDisplay = false,
         selectedItemBackgroundColor = 'rgba(116, 116, 128, 0.08)',
-        textAlign = 'right',
+        // textAlign = 'right',
         CustomPopView = undefined, CustomPopViewStyle, showListEmptyComponent = true, emptyText = '', onChangeText
       } = props;
       // State management similar to project implementation
