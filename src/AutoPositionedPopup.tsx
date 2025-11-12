@@ -371,7 +371,6 @@ const AutoPositionedPopup = memo(
       const hasShownRootView = useRef(false);
       // Additional refs for keyboard and position tracking
       const ref_isFocus = useRef<boolean>(false);
-      const ref_isKeyboardFullyShown = useRef<boolean>(false);
       const ref_listPos: MutableRefObject<any> = useRef<LayoutRectangle | undefined>(undefined)
       const keyboardVisibleRef = useRef(false);
       const refAutoPositionedPopup = useRef<View>(null);
@@ -408,6 +407,10 @@ const AutoPositionedPopup = memo(
       // Refs to store latest values for useEffect without adding to dependency array
       const dataRef = useRef<SelectedItem[]>(data);
       const isKeyboardFullyShown = useKeyboardStatus();
+      const ref_isKeyboardFullyShown = useRef<boolean>(isKeyboardFullyShown);
+      useEffect(() => {
+        ref_isKeyboardFullyShown.current = isKeyboardFullyShown;
+      }, [isKeyboardFullyShown])
       const theme = defaultTheme;
       /**
        * componentDidMount && componentWillUnmount
@@ -431,7 +434,7 @@ const AutoPositionedPopup = memo(
         };
       }, []);
       useEffect(() => {
-        console.log('AutoPositionedPopup rootViews=', {tag,rootViews});
+        console.log('AutoPositionedPopup rootViews=', {tag, rootViews});
         rootViewsRef.current = rootViews;
         if (rootViews.length === 0) {
           hasAddedRootView.current = false;
@@ -559,11 +562,11 @@ const AutoPositionedPopup = memo(
                   // 1. ALWAYS try to show popup ABOVE the input field first
                   // 2. Only if that goes off the top of screen, show BELOW instead
                   // 3. Don't cover/overlap the input field
-                  let popupY = y - listLayout.height+statusBarHeight; // Default: above input field
+                  let popupY = y - listLayout.height + statusBarHeight; // Default: above input field
                   // Check if showing above would go off the top of screen
                   if (popupY < statusBarHeight) {
                     console.log('AutoPositionedPopup with keyboard: would go off screen top, showing BELOW instead');
-                    popupY = y + height+statusBarHeight; // Show below input field
+                    popupY = y + height + statusBarHeight; // Show below input field
                     // Also check if showing below would go off the bottom
                     const maxY = screenHeight - listLayout.height;
                     if (popupY > maxY) {
@@ -629,12 +632,12 @@ const AutoPositionedPopup = memo(
                 });
                 // CORRECT POSITIONING LOGIC (with status bar consideration):
                 // 1. Default: above input field
-                let popupY = componentY - popupHeight+statusBarHeight;
+                let popupY = componentY - popupHeight + statusBarHeight;
                 // 2. Check if showing above would overlap with status bar
                 // The top boundary should be statusBarHeight, not 0
                 if (popupY < statusBarHeight) {
                   console.log('AutoPositionedPopup: would overlap status bar, showing BELOW instead');
-                  popupY = componentY + componentHeight+statusBarHeight; // Show below input field
+                  popupY = componentY + componentHeight + statusBarHeight; // Show below input field
                   // 3. Also check if showing below would go off the bottom
                   const maxY = screenHeight - popupHeight;
                   if (popupY > maxY) {
@@ -1044,43 +1047,67 @@ const AutoPositionedPopup = memo(
                       'hasAddedRootView.current': hasAddedRootView.current,
                       'hasShownRootView.current': hasShownRootView.current,
                       'hasTriggeredFocus.current': hasTriggeredFocus.current,
-                      'selectedItem': selectedItem
+                      'selectedItem': selectedItem,
+                      'ref_isKeyboardFullyShown.current': ref_isKeyboardFullyShown.current
                     });
-                    {
+                    if (useTextInput) {
+                      const _addRootView=() => {
+                        if (!hasAddedRootView.current) {
+                          // TextInput version: hide first, show after keyboard is fully displayed
+                          hasAddedRootView.current = true;
+                          hasShownRootView.current = false;
+                          addRootView({
+                            id: tag,
+                            style: {
+                              top: 0,
+                              left: 0,
+                              width: popUpViewStyle?.width,
+                              height: listLayout.height,
+                              opacity: 0,
+                            },
+                            component: (
+                              <AutoPositionedPopupList
+                                tag={tag}
+                                updateState={updateState}
+                                fetchData={fetchData}
+                                pageSize={pageSize}
+                                renderItem={renderItem}
+                                selectedItem={selectedItem}
+                                localSearch={localSearch}
+                                showListEmptyComponent={showListEmptyComponent}
+                                emptyText={emptyText}
+                              />
+                            ),
+                            useModal: false,
+                          });
+                        }
+                      }
+                      if (ref_isKeyboardFullyShown.current) {
+                        Keyboard.dismiss();
+                        setTimeout(() => {
+                          setState((prevState) => {
+                            return {
+                              ...prevState,
+                              isFocus: true,
+                            };
+                          });
+                          _addRootView()
+                        }, 500);
+                      } else {
+                        setState((prevState) => {
+                          return {
+                            ...prevState,
+                            isFocus: true,
+                          };
+                        });
+                        _addRootView()
+                      }
+                    } else {
                       setState((prevState) => {
                         return {
                           ...prevState,
                           isFocus: true,
                         };
-                      });
-                    }
-                    if (!hasAddedRootView.current && useTextInput) {
-                      // TextInput version: hide first, show after keyboard is fully displayed
-                      hasAddedRootView.current = true;
-                      hasShownRootView.current = false;
-                      addRootView({
-                        id: tag,
-                        style: {
-                          top: 0,
-                          left: 0,
-                          width: popUpViewStyle?.width,
-                          height: listLayout.height,
-                          opacity: 0,
-                        },
-                        component: (
-                          <AutoPositionedPopupList
-                            tag={tag}
-                            updateState={updateState}
-                            fetchData={fetchData}
-                            pageSize={pageSize}
-                            renderItem={renderItem}
-                            selectedItem={selectedItem}
-                            localSearch={localSearch}
-                            showListEmptyComponent={showListEmptyComponent}
-                            emptyText={emptyText}
-                          />
-                        ),
-                        useModal: false,
                       });
                     }
                     console.log('AutoPositionedPopup onPress done')
