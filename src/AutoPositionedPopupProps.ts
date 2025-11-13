@@ -3,15 +3,15 @@ import {StyleProp, TextInputProps, TextStyle, ViewStyle} from 'react-native';
 import {TextInputSubmitEditingEventData} from 'react-native/Libraries/Components/TextInput/TextInput';
 import {NativeSyntheticEvent} from 'react-native/Libraries/Types/CoreEventTypes';
 
-export interface Data {
-  items: any[];
-  pageIndex: number;
-  needLoadMore: boolean;
-}
-
 export interface SelectedItem {
   id: string;
   title: string;
+}
+
+export interface Data {
+  items: SelectedItem[];
+  pageIndex: number;
+  needLoadMore: boolean;
 }
 
 /**
@@ -34,6 +34,26 @@ export interface AutoPositionedPopupProps {
   labelStyle?: ViewStyle;
   tag: string;
   tagStyle?: ViewStyle;
+  /**
+   * fetchData={fetchData}
+   * const fetchData = useCallback(async ({
+   *                                                           pageIndex,
+   *                                                           pageSize,
+   *                                                           searchQuery
+   *                                                         }: {
+   *     pageIndex: number;
+   *     pageSize: number;
+   *     searchQuery?: string
+   *   }): Promise<Data | null> => {
+   *     try {
+   *     } catch (e) {
+   *     }
+   *     return Promise.resolve(null)
+   *   }, []);
+   * @param pageIndex
+   * @param pageSize
+   * @param searchQuery
+   */
   fetchData?: ({
                  pageIndex,
                  pageSize,
@@ -44,7 +64,7 @@ export interface AutoPositionedPopupProps {
     searchQuery?: string;
   }) => Promise<Data | null>;
   renderItem?: ({item, index}: { item: SelectedItem; index: number }) => React.ReactElement;
-  onItemSelected?: (item: SelectedItem) => void;
+  onItemSelected?: (item: SelectedItem & any) => void;
   onSubmitEditing?: (e: NativeSyntheticEvent<TextInputSubmitEditingEventData>) => void;
   localSearch?: boolean;
   placeholder?: string;

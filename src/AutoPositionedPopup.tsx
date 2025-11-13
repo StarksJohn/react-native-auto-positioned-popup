@@ -982,7 +982,7 @@ const AutoPositionedPopup = memo(
                 onChangeText && onChangeText(ref_searchQuery.current)
               }
             }}
-            placeholderTextColor={theme.colors.placeholderText}
+            placeholderTextColor={stableTextInputProps && stableTextInputProps['placeholderTextColor'] || theme.colors.placeholderText}
             placeholder={placeholder}
             onKeyPress={(e) => {
               if (e.nativeEvent.key === 'Enter') {
