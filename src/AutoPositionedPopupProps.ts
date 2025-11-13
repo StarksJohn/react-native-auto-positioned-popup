@@ -15,6 +15,18 @@ export interface SelectedItem {
 }
 
 /**
+ * MedicationNotesCustomRow component with local state management
+ * Handles search query state and disabled logic for Medication Notes add button
+ */
+export interface RNAutoPositionedPopupCustomRowProps {
+  children?: React.ReactNode;
+  selectedItem?: SelectedItem | null;
+  selectList?: string[];
+  onAdded?: (textToAdd: string) => void;
+  clearSelectedItem?: () => void;
+}
+
+/**
  * Props interface for AutoPositionedPopup component
  */
 export interface AutoPositionedPopupProps {
