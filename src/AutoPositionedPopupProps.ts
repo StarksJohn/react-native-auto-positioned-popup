@@ -9,7 +9,7 @@ export interface SelectedItem {
 }
 
 export interface Data {
-  items: SelectedItem[];
+  items: SelectedItem[] | any[];
   pageIndex: number;
   needLoadMore: boolean;
 }
@@ -20,7 +20,7 @@ export interface Data {
  */
 export interface RNAutoPositionedPopupCustomRowProps {
   children?: React.ReactNode;
-  selectedItem?: SelectedItem | null;
+  selectedItem?: SelectedItem | any | null;
   selectList?: string[];
   onAdded?: (textToAdd: string) => void;
   clearSelectedItem?: () => void;
