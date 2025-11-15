@@ -96,6 +96,14 @@ export interface AutoPositionedPopupProps {
   btwChildren?: () => React.ReactNode;
   useTextInput?: boolean;
   keyExtractor?: (item: SelectedItem) => string;
+  /**
+   *  CustomPopView={() => {
+   *               return (props) => {
+   *                 return <></>
+   *               }
+   *             }}
+   * @constructor
+   */
   CustomPopView?: () => React.ComponentType<
     ViewStyle & {
     children?: React.ReactNode;
