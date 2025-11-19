@@ -20,7 +20,7 @@ export interface Data {
  */
 export interface RNAutoPositionedPopupCustomRowProps {
   children?: React.ReactNode;
-  selectedItem?: SelectedItem | any | null;
+  selectedItem?: SelectedItem | any | null | undefined;
   selectList?: string | any [];
   onAdded?: (textToAdd: string) => void;
   clearSelectedItem?: () => void;

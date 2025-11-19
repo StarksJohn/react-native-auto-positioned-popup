@@ -89,7 +89,7 @@ const ListItem: React.FC<{
     }, [rootViews]);
     return useMemo(() => {
       // console.log('AutoPositionedPopup.tsx ListItem=', {index, item, selectedItem});
-      const isSelected = item.id === selectedItem?.id || item.title === selectedItem?.title;
+      const isSelected = item.id === selectedItem?.id || item.title == selectedItem?.title;
       return (
         <TouchableOpacity
           key={item.id}
@@ -213,7 +213,7 @@ const AutoPositionedPopupList: React.FC<AutoPositionedPopupListProps> = memo(
       console.log('AutoPositionedPopupList _fetchData=', {pageIndex, pageSize: currentPageSize, 'state.localData': state.localData, 'ref_searchQuery.current': ref_searchQuery.current, localSearch});
       if (localSearch && state.localData.length > 0) {
         const result: SelectedItem[] = state.localData.filter((item: SelectedItem) => {
-          return item.title?.toLowerCase().includes(ref_searchQuery.current.toLowerCase());
+          return `${item.title}`?.toLowerCase().includes(ref_searchQuery.current.toLowerCase());
         });
         console.log('AutoPositionedPopupList _fetchData localSearch result=', result);
         return Promise.resolve({
@@ -453,7 +453,7 @@ const AutoPositionedPopup = memo(
       useEffect(() => {
         console.log('AutoPositionedPopup useEffect [selectedItem, state.selectedItem, tag]=', {tag, selectedItem, 'state.selectedItem': state.selectedItem});
         console.log('AutoPositionedPopup useEffect state.selectedItem=', state.selectedItem);
-        if (state.selectedItem?.id !== selectedItem?.id || state.selectedItem?.title !== selectedItem?.title) {
+        if (state.selectedItem?.id !== selectedItem?.id || state.selectedItem?.title != selectedItem?.title) {
           console.log('AutoPositionedPopup useEffect selectedItem!=state.selectedItem');
           setState((prevState) => {
             return {
@@ -886,7 +886,7 @@ const AutoPositionedPopup = memo(
           hasTriggeredFocus.current = true;
           ref_isFocus.current = true;
           if (stateRef.current.selectedItem) {
-            ref_searchQuery.current = stateRef.current.selectedItem.title;
+            ref_searchQuery.current = `${stateRef.current.selectedItem.title}`;
           }
           if (textInputRef.current && ref_searchQuery.current) {
             textInputRef.current.setNativeProps({
