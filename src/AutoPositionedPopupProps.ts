@@ -35,21 +35,28 @@ export interface AutoPositionedPopupProps {
   tag: string;
   tagStyle?: ViewStyle;
   /**
-   * fetchData={fetchData}
    * const fetchData = useCallback(async ({
-   *                                                           pageIndex,
-   *                                                           pageSize,
-   *                                                           searchQuery
-   *                                                         }: {
+   *                                                         pageIndex,
+   *                                                         pageSize,
+   *                                                         searchQuery
+   *                                                       }: {
    *     pageIndex: number;
    *     pageSize: number;
    *     searchQuery?: string
-   *   }): Promise<Data | null> => {
+   *   }): Promise<AutoPositionedPopupData | null> => {
    *     try {
+   *       const data: SelectedItem[] = await api()
+   *       console.log('fetchData data=', data)
+   *       if (data) {
+   *         return Promise.resolve({
+   *           items: data, needLoadMore: false, pageIndex: pageIndex,
+   *         })
+   *       }
    *     } catch (e) {
    *     }
    *     return Promise.resolve(null)
    *   }, []);
+   * fetchData={fetchData}
    * @param pageIndex
    * @param pageSize
    * @param searchQuery
@@ -65,6 +72,20 @@ export interface AutoPositionedPopupProps {
   }) => Promise<Data | null>;
   renderItem?: ({item, index}: { item: SelectedItem; index: number }) => React.ReactElement;
   onItemSelected?: (item: SelectedItem & any) => void;
+  /**
+   * onSubmitEditing={(e: NativeSyntheticEvent<TextInputSubmitEditingEventData>) => {
+   *                   if (e.nativeEvent?.text) {
+   *                     const searchQuery = e.nativeEvent?.text
+   *                     setTimeout(() => {
+   *                       emitEvent(AutoPositionedPopupEventNames.searchQueryChange, {
+   *                         tag: '',
+   *                         searchQuery: searchQuery
+   *                       })
+   *                     }, 250);
+   *                   }
+   *                 }}
+   * @param e
+   */
   onSubmitEditing?: (e: NativeSyntheticEvent<TextInputSubmitEditingEventData>) => void;
   localSearch?: boolean;
   placeholder?: string;
@@ -84,14 +105,42 @@ export interface AutoPositionedPopupProps {
    */
   CustomRow?: React.ComponentType<ViewStyle & { children?: React.ReactNode }>;
   /**
-   *  btwChildren={
-   *                     () => {
-   *                       return (
-   *                         <>
-   *                         </>
-   *                       );
-   *                     }
-   *                   }
+   * const renderBtChildren = useCallback(() => {
+   *     return (
+   *       <BtChildren
+   *         selectedItem={state.selectedItem}
+   *       />
+   *     );
+   *   }, [state.selectedItem]);
+   *
+   *   const BtChildren: React.FC<AutoPositionedPopupProps> = memo(({
+   *                                                                                          selectedItem,
+   *                                                                                        }: AutoPositionedPopupProps) => {
+   *   const {uiTheme} = useThemeProvider();
+   *   const [searchQuery, setSearchQuery] = useState<string>('');
+   *   useGlobalEventListener(
+   *     AutoPositionedPopupEventNames.searchQueryChange,
+   *     useCallback(({tag, searchQuery: newQuery}: { tag: string; searchQuery: string }): void => {
+   *       console.log('BtChildren searchQueryChange event received=', {tag, searchQuery: newQuery});
+   *       if (tag === i18n.t('')) {
+   *         setSearchQuery(newQuery);
+   *       }
+   *     }, [])
+   *   );
+   *   console.log('BtChildren render=', {
+   *     selectedItem, searchQuery
+   *   })
+   *   return (
+   *     <>
+   *       <Text
+   *         style={[styles.selectBtText, ((selectedItem || searchQuery) && {color: uiTheme.colors.$text})]}>{searchQuery ? searchQuery : (selectedItem ? selectedItem.title : i18n.t('Please_enter'))}</Text>
+   *     </>
+   *   );
+   * });
+   *
+   * btwChildren={
+   *                   renderBtChildren
+   *                 }
    */
   btwChildren?: () => React.ReactNode;
   useTextInput?: boolean;
@@ -127,5 +176,14 @@ export interface AutoPositionedPopupProps {
   selectedItemBackgroundColor?: string;
   showListEmptyComponent?: boolean;
   emptyText?: string;
+  /**
+   * onChangeText={(text: string) => {
+   *                   console.log('onChangeText=', text)
+   *                   emitEvent(AutoPositionedPopupEventNames.searchQueryChange, {
+   *                     tag: '',
+   *                     searchQuery: text
+   *                   })
+   *                 }}
+   */
   onChangeText?: ((text: string) => void) | undefined;
 }
