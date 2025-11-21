@@ -24,6 +24,7 @@ export interface RNAutoPositionedPopupCustomRowProps {
   selectList?: string | any [];
   onAdded?: (textToAdd: string) => void;
   clearSelectedItem?: () => void;
+  disabled?: boolean;
 }
 
 /**
