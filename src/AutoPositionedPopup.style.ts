@@ -53,7 +53,7 @@ export default StyleSheet.create({
     textAlign: 'right',
     flex: 1,
     includeFontPadding: false,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'transparent',
     textAlignVertical: 'center',
     paddingVertical: 0,
     paddingHorizontal: 0,

@@ -187,4 +187,5 @@ export interface AutoPositionedPopupProps {
    *                 }}
    */
   onChangeText?: ((text: string) => void) | undefined;
+  themeMode?: string | null | undefined;//light | dark
 }

@@ -70,17 +70,19 @@ const ListItem: React.FC<{
   item: SelectedItem;
   index: number;
   selectedItem?: SelectedItem;
+  themeMode?: string | null | undefined;
 }> = memo(
   ({
      updateState,
      item,
      index,
-     selectedItem,
+     selectedItem, themeMode
    }: {
     updateState: (key: string, value: SelectedItem) => void;
     item: SelectedItem;
     index: number;
     selectedItem?: SelectedItem;
+    themeMode?: string | null | undefined;
   }): React.JSX.Element => {
     const {addRootView, setRootViewNativeStyle, removeRootView, rootViews} = useRootView();
     const rootViewsRef = useRef(rootViews);
@@ -95,7 +97,7 @@ const ListItem: React.FC<{
           key={item.id}
           style={[
             styles.commonModalRow,
-            {backgroundColor: isSelected ? 'rgba(116, 116, 128, 0.08)' : 'transparent'},
+            {backgroundColor: isSelected ? (themeMode === 'light' ? 'rgba(116, 116, 128, 0.08)' : 'rgba(120, 120, 128, 0.36)') : 'transparent'},
           ]}
           onPress={() => {
             // console.log('AutoPositionedPopup.tsx ListItem onPress item=', item); // Commented to prevent spam
@@ -103,12 +105,12 @@ const ListItem: React.FC<{
             updateState('selectedItem', item);
           }}
         >
-          <Text style={styles.ListItemCode} numberOfLines={1} ellipsizeMode="tail">
+          <Text style={(themeMode === 'light' ? styles.ListItemCode : {...styles.ListItemCode, color: '#fff'})} numberOfLines={1} ellipsizeMode="tail">
             {item.title}
           </Text>
         </TouchableOpacity>
       );
-    }, [updateState, item, index, selectedItem, rootViewsRef]);
+    }, [updateState, item, index, selectedItem, rootViewsRef, themeMode]);
   }
 );
 
@@ -132,6 +134,7 @@ interface AutoPositionedPopupListProps {
   pageSize?: number;
   showListEmptyComponent?: boolean;
   emptyText?: string;
+  themeMode?: string | null | undefined;
 }
 
 const AutoPositionedPopupList: React.FC<AutoPositionedPopupListProps> = memo(
@@ -143,7 +146,7 @@ const AutoPositionedPopupList: React.FC<AutoPositionedPopupListProps> = memo(
      renderItem,
      selectedItem,
      localSearch,
-     pageSize, showListEmptyComponent, emptyText
+     pageSize, showListEmptyComponent, emptyText, themeMode
    }: AutoPositionedPopupListProps): React.JSX.Element => {
     const [state, setState] = useState<{
       selectedItem?: SelectedItem;
@@ -173,19 +176,6 @@ const AutoPositionedPopupList: React.FC<AutoPositionedPopupListProps> = memo(
         setSearchQuery('');
       };
     }, []);
-    // useEffect(() => {
-    //   // Listen to TextInput events, refresh list when received, not dependent on global searchQuery
-    //   // Sync the latest searchQuery to list-specific ref for _fetchData to use
-    //   ref_searchQuery.current = searchQuery;
-    //   console.log('AutoPositionedPopupList useEffect searchQuery=', searchQuery);
-    //   console.log('AutoPositionedPopupList useEffect state.localData=', state.localData);
-    //   console.log('AutoPositionedPopupList useEffect ref_list.current=', ref_list.current);
-    //   console.log('AutoPositionedPopupList useEffect localSearch=', localSearch);
-    //   if (ref_list.current && (localSearch && state.localData.length > 0 || !localSearch)) {
-    //     ref_list.current.scrollToTop();
-    //     ref_list.current.refresh();
-    //   }
-    // }, [searchQuery, state.localData, localSearch]);
     useEffect(() => {
       const unsubscribe = subscribeQueryChange((newQuery: string) => {
         console.log('AutoPositionedPopupList useEffect subscribeQueryChange newQuery=', newQuery);
@@ -254,16 +244,16 @@ const AutoPositionedPopupList: React.FC<AutoPositionedPopupListProps> = memo(
     };
     const _renderItem = useCallback(
       ({item, index}: { item: SelectedItem; index: number }) => {
-        return <ListItem item={item} index={index} updateState={_updateState} selectedItem={state.selectedItem} />;
+        return <ListItem item={item} index={index} updateState={_updateState} selectedItem={state.selectedItem} themeMode={themeMode} />;
       },
-      [state.selectedItem]
+      [state.selectedItem, themeMode]
     );
     return useMemo(() => {
       console.log('AutoPositionedPopupList (global as any)?.$fake=', (global as any)?.$fake);
       // Babel configuration handles the path redirection based on global.$fake
       // No need for conditional import here
       return (
-        <View style={[styles.baseModalView, styles.autoPositionedPopupList]}>
+        <View style={[styles.baseModalView, styles.autoPositionedPopupList, {backgroundColor: themeMode === 'light' ? '#fff' : 'rgba(44, 44, 46, 1)',}]}>
           <AdvancedFlatList
             style={[{borderRadius: 0}]}
             {...(ref_list && {ref: ref_list})}
@@ -286,7 +276,7 @@ const AutoPositionedPopupList: React.FC<AutoPositionedPopupListProps> = memo(
       searchQuery,
       localSearch,
       pageSize,
-      rootViewsRef, showListEmptyComponent, emptyText
+      rootViewsRef, showListEmptyComponent, emptyText, themeMode
     ]);
   }
 );
@@ -355,7 +345,7 @@ const AutoPositionedPopup = memo(
         centerDisplay = false,
         selectedItemBackgroundColor = 'rgba(116, 116, 128, 0.08)',
         // textAlign = 'right',
-        CustomPopView = undefined, CustomPopViewStyle, showListEmptyComponent = true, emptyText = '', onChangeText
+        CustomPopView = undefined, CustomPopViewStyle, showListEmptyComponent = true, emptyText = '', onChangeText, themeMode = 'light',
       } = props;
       // State management similar to project implementation
       const [state, setState] = useState<StateProps>({
@@ -721,6 +711,7 @@ const AutoPositionedPopup = memo(
                       localSearch={localSearch}
                       showListEmptyComponent={showListEmptyComponent}
                       emptyText={emptyText}
+                      themeMode={themeMode}
                     />
                   ),
                   useModal: true,
@@ -757,7 +748,7 @@ const AutoPositionedPopup = memo(
         CustomPopViewStyle,
         forceRemoveAllRootViewOnItemSelected,
         tag, TextInputProps,
-        state.selectedItem, showListEmptyComponent
+        state.selectedItem, showListEmptyComponent, themeMode
       ]);
       // Imperative handle for parent component access
       useImperativeHandle(
@@ -828,11 +819,11 @@ const AutoPositionedPopup = memo(
       // Only update when deep comparison detects real changes to avoid TextInput recreation due to reference changes during parent component redraws
       const stableInputStyle = useMemo(() => {
         if (!shallowEqual(stableInputStyleRef.current, inputStyle)) {
-          console.log(`AutoPositionedPopup inputStyle deep change detected, updating stable reference - tag: ${tag}`);
+          console.log(`AutoPositionedPopup stableInputStyle: `, {tag, inputStyle, themeMode});
           stableInputStyleRef.current = inputStyle;
         }
         return stableInputStyleRef.current;
-      }, [inputStyle, tag]);
+      }, [inputStyle, tag, themeMode]);
 
       const stableTextInputProps = useMemo(() => {
         if (!shallowEqual(stableTextInputPropsRef.current, TextInputProps)) {
@@ -962,6 +953,7 @@ const AutoPositionedPopup = memo(
             style={[
               styles.inputStyle,
               stableInputStyle,
+              (themeMode==='dark' && {color:'#fff'})
             ]}
             textAlign={stableTextInputProps && stableTextInputProps['textAlign'] || 'left'}
             multiline={stableTextInputProps && stableTextInputProps['multiline'] || false}
@@ -1051,7 +1043,7 @@ const AutoPositionedPopup = memo(
                       'ref_isKeyboardFullyShown.current': ref_isKeyboardFullyShown.current
                     });
                     if (useTextInput) {
-                      const _addRootView=() => {
+                      const _addRootView = () => {
                         if (!hasAddedRootView.current) {
                           // TextInput version: hide first, show after keyboard is fully displayed
                           hasAddedRootView.current = true;
@@ -1076,6 +1068,7 @@ const AutoPositionedPopup = memo(
                                 localSearch={localSearch}
                                 showListEmptyComponent={showListEmptyComponent}
                                 emptyText={emptyText}
+                                themeMode={themeMode}
                               />
                             ),
                             useModal: false,
