@@ -527,8 +527,22 @@ const AutoPositionedPopup = memo(
             // then requestAnimationFrame ensures measurement happens after next render frame
             setTimeout(() => {
               requestAnimationFrame(() => {
-                refAutoPositionedPopup.current?.measureInWindow((x: number, y: number, width: number, height: number) => {
+                refAutoPositionedPopup.current?.measureInWindow((x: number | undefined, y: number | undefined, width: number | undefined, height: number | undefined) => {
                   console.log('AutoPositionedPopup useTextInput measureInWindow (after 300ms + RAF, layout stable)=', {x, y, width, height});
+                  // CRITICAL FIX: Handle undefined values from measureInWindow
+                  // This can happen during navigation transitions or when view is not yet mounted
+                  if (x === undefined || y === undefined || width === undefined || height === undefined) {
+                    console.warn('AutoPositionedPopup useTextInput: measureInWindow returned undefined values, using fallback position');
+                    const screenHeightFallback = Dimensions.get('window').height;
+                    const screenWidthFallback = Dimensions.get('window').width;
+                    const fallbackY = (screenHeightFallback - listLayout.height) / 2;
+                    const fallbackX = screenWidthFallback * 0.05;
+                    const fallbackWidth = screenWidthFallback * 0.9;
+                    x = fallbackX;
+                    y = fallbackY;
+                    width = fallbackWidth;
+                    height = 50;
+                  }
                   // CRITICAL FIX: Coordinate system mismatch issue
                   // Problem: measureInWindow returns coordinates relative to window (fixed reference),
                   // but popup uses absolute positioning relative to App container (which shifts when keyboard appears)
@@ -603,8 +617,26 @@ const AutoPositionedPopup = memo(
               Keyboard.dismiss();
               return;
             }
-            refAutoPositionedPopup.current?.measureInWindow((x: number, y: number, width: number, height: number) => {
+            refAutoPositionedPopup.current?.measureInWindow((x: number | undefined, y: number | undefined, width: number | undefined, height: number | undefined) => {
               console.log('AutoPositionedPopup !useTextInput measureInWindow=', {x, y, width, height});
+              // CRITICAL FIX: Handle undefined values from measureInWindow
+              // This can happen during navigation transitions or when view is not yet mounted
+              if (x === undefined || y === undefined || width === undefined || height === undefined) {
+                console.warn('AutoPositionedPopup: measureInWindow returned undefined values, using fallback position');
+                // Use screen center as fallback position
+                const screenHeight = Dimensions.get('window').height;
+                const screenWidth = Dimensions.get('window').width;
+                const fallbackY = (screenHeight - listLayout.height) / 2;
+                const fallbackX = screenWidth * 0.05; // 5% from left
+                const fallbackWidth = screenWidth * 0.9; // 90% width
+                ref_listPos.current = { x: fallbackX, y: fallbackY, width: fallbackWidth };
+                console.log('AutoPositionedPopup !useTextInput using fallback position=', ref_listPos.current);
+                // Proceed with fallback values
+                x = fallbackX;
+                y = fallbackY;
+                width = fallbackWidth;
+                height = 50; // Default height for the trigger element
+              }
               // CORRECT POSITIONING LOGIC (as per user requirement)
               // Default: show popup ABOVE the input field
               // Only if that goes off the top of screen (considering status bar), show BELOW instead
