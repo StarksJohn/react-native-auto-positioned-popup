@@ -550,6 +550,137 @@ cat release.log
 2. **Use automation tokens** - For CI/CD pipelines instead of passwords
 3. **Scope packages** - Consider using scoped packages (@yourname/package)
 
+---
+
+## 🔑 NPM Automation Token Configuration (Bypass 2FA)
+
+To enable fully automated releases without requiring 2FA verification each time, you must configure an NPM Automation Token with the "Bypass 2FA" option enabled.
+
+### Step 1: Create Granular Access Token
+
+1. Visit https://www.npmjs.com/settings/YOUR_USERNAME/tokens
+2. Click **"Generate New Token"** → **"Granular Access Token"**
+
+### Step 2: Configure Token Settings
+
+| Setting | Recommended Value |
+|---------|-------------------|
+| **Token name** | `auto-publish` |
+| **Description** | Used for automated releases |
+| **⚠️ Bypass two-factor authentication (2FA)** | ✅ **MUST CHECK THIS** |
+| **Allowed IP ranges** | (optional) Leave empty for any IP |
+| **Permissions** | `Read and write` |
+| **Select packages** | `All packages` or specific package |
+| **Expiration Date** | Set a reasonable expiration (e.g., 1 year) |
+
+### Step 3: Generate and Save Token
+
+1. Click **"Generate token"**
+2. **IMPORTANT**: Copy the token immediately - it will only be shown once!
+3. Token format: `npm_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`
+
+### Step 4: Configure Token in Your System
+
+#### Option A: Global Configuration (Recommended)
+
+```bash
+# Set token globally for your user
+npm config set //registry.npmjs.org/:_authToken=npm_YOUR_TOKEN_HERE
+```
+
+This saves the token to `~/.npmrc` (or `C:\Users\USERNAME\.npmrc` on Windows).
+
+#### Option B: Project-level Configuration
+
+Create a `.npmrc` file in your project root:
+
+```
+//registry.npmjs.org/:_authToken=${NPM_TOKEN}
+```
+
+Then set the environment variable:
+
+```bash
+# Windows PowerShell
+$env:NPM_TOKEN="npm_YOUR_TOKEN_HERE"
+
+# Windows CMD
+set NPM_TOKEN=npm_YOUR_TOKEN_HERE
+
+# Linux/Mac
+export NPM_TOKEN=npm_YOUR_TOKEN_HERE
+```
+
+#### Option C: CI/CD Environment
+
+For GitHub Actions, add the token as a repository secret:
+
+```yaml
+# .github/workflows/publish.yml
+- name: Publish to npm
+  run: npm publish
+  env:
+    NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+```
+
+### Step 5: Verify Token Configuration
+
+```bash
+# Verify authentication
+npm whoami
+
+# Should output your npm username
+```
+
+### Troubleshooting Token Issues
+
+#### Error: "401 Unauthorized"
+
+**Cause**: Token is invalid, expired, or "Bypass 2FA" was not checked.
+
+**Solution**:
+1. Delete the old token on npmjs.com
+2. Create a new token with ✅ "Bypass two-factor authentication (2FA)" checked
+3. Reconfigure the new token
+
+#### Error: "403 Forbidden - Two-factor authentication required"
+
+**Cause**: Token was created without checking "Bypass 2FA" option.
+
+**Solution**:
+1. Go to https://www.npmjs.com/settings/YOUR_USERNAME/tokens
+2. Delete the problematic token
+3. Create a new Granular Access Token
+4. **IMPORTANT**: Check ✅ "Bypass two-factor authentication (2FA)"
+5. Reconfigure with the new token
+
+#### Error: "Access token expired or revoked"
+
+**Cause**: Token has expired or was manually revoked.
+
+**Solution**:
+1. Generate a new token on npmjs.com
+2. Update the token in your `.npmrc` file
+
+### Security Best Practices for Automation Tokens
+
+1. **Set expiration dates** - Don't use tokens that never expire
+2. **Limit package scope** - If possible, limit token to specific packages
+3. **Use IP restrictions** - Add allowed IP ranges if your deployment IPs are static
+4. **Rotate tokens regularly** - Replace tokens periodically
+5. **Never commit tokens** - Add `.npmrc` to `.gitignore` if it contains tokens
+6. **Use environment variables** - Prefer `${NPM_TOKEN}` pattern over hardcoded tokens
+
+### Current Token Status
+
+Check your token status at: https://www.npmjs.com/settings/stark2018/tokens
+
+| Token Name | Created | Expires | Bypass 2FA |
+|------------|---------|---------|------------|
+| auto-publish | Dec 24, 2025 | Mar 24, 2026 | ❌ (needs recreation) |
+
+**Action Required**: Recreate the `auto-publish` token with "Bypass 2FA" checked.
+
 ### Code Security  
 4. **Review dependencies** - Regularly audit dependencies for vulnerabilities
 5. **Never expose credentials** - Script never exposes NPM credentials
