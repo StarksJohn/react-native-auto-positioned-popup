@@ -1,175 +1,176 @@
-# NPM Publishing Guide for react-native-auto-positioned-popup
+# react-native-auto-positioned-popup NPM 发布指南
 
-This comprehensive guide provides both manual and automated approaches for publishing this React Native component to npm, including an advanced automated release system for streamlined publishing workflows.
+本指南提供了手动和自动化两种方法来发布这个 React Native 组件到 npm，包括用于简化发布工作流程的高级自动化发布系统。
 
-## Table of Contents
+## 目录
 
-- [Prerequisites](#prerequisites)
-- [🚀 Automated Release System (Recommended)](#-automated-release-system-recommended)
-- [Manual Publishing Steps](#manual-publishing-steps)
-- [Version Management](#version-management)
-- [Troubleshooting](#troubleshooting)
-- [Best Practices](#best-practices)
-- [Security Considerations](#security-considerations)
-- [Maintenance](#maintenance)
+- [前置要求](#前置要求)
+- [🚀 自动化发布系统（推荐）](#-自动化发布系统推荐)
+- [手动发布步骤](#手动发布步骤)
+- [版本管理](#版本管理)
+- [故障排除](#故障排除)
+- [最佳实践](#最佳实践)
+- [安全注意事项](#安全注意事项)
+- [维护](#维护)
 
-## Prerequisites
+## 前置要求
 
-1. **Node.js and npm**: Make sure you have Node.js installed (version 14 or higher)
-2. **npm account**: Create an account at [npmjs.com](https://npmjs.com)
-3. **Git**: For version control and repository management
-4. **Git remote repository**: Properly configured with push permissions
+1. **Node.js 和 npm**: 确保已安装 Node.js（版本 14 或更高）
+2. **npm 账户**: 在 [npmjs.com](https://npmjs.com) 创建账户
+3. **Git**: 用于版本控制和仓库管理
+4. **Git 远程仓库**: 正确配置并具有推送权限
 
 ---
 
-## 🚀 Automated Release System (Recommended)
+## 🚀 自动化发布系统（推荐）
 
-This project includes a comprehensive automated release script that handles version management, building, testing, Git operations, and NPM publishing with advanced error handling and rollback capabilities.
+本项目包含一个完整的自动化发布脚本，可处理版本管理、构建、测试、Git 操作和 NPM 发布，具有高级错误处理和回滚功能。
 
-### ✨ Features
+### ✨ 功能特性
 
-- 🚀 **Interactive version selection** - Choose between patch, minor, or major releases
-- ✅ **Comprehensive pre-flight checks** - Git status, NPM auth, dependencies, network connectivity
-- 🔨 **Automated building and testing** - Clean, compile, lint, type-check, and test
-- 📦 **Package verification** - Ensures package integrity before publishing
-- 🔄 **Git operations** - Automatic commits, tagging, and pushing
-- 📤 **NPM publishing** - Publishes to registry with verification
-- 🎯 **Error handling** - Rollback capabilities on failure
-- 📝 **Detailed logging** - Complete audit trail of release process
-- 🧪 **Dry run mode** - Test the process without making changes
+- 🚀 **交互式版本选择** - 在 patch、minor 或 major 发布之间选择
+- ✅ **全面的预检查** - Git 状态、NPM 认证、依赖项、网络连接
+- 🔨 **自动构建和测试** - 清理、编译、代码检查、类型检查和测试
+- 📦 **包验证** - 发布前确保包的完整性
+- 🔄 **Git 操作** - 自动提交、打标签和推送
+- 📤 **NPM 发布** - 发布到 registry 并验证
+- 🎯 **错误处理** - 失败时的回滚功能
+- 📝 **详细日志** - 完整的发布过程审计记录
+- 🧪 **试运行模式** - 在不进行实际更改的情况下测试流程
 
-### Quick Start
+### 快速开始
 
-#### Interactive Release (Recommended)
-use Private VPN
+#### 交互式发布（推荐）
+
+使用私有 VPN
 ```bash
 npm run release
 ```
 
-This will:
-1. Run all pre-flight checks
-2. Build and test the project
-3. Prompt you to select version type (patch/minor/major)
-4. Show you the version change and ask for confirmation
-5. Handle all Git operations
-6. Publish to NPM
-7. Verify the publication
+这将：
+1. 运行所有预检查
+2. 构建和测试项目
+3. 提示您选择版本类型（patch/minor/major）
+4. 显示版本变更并询问确认
+5. 处理所有 Git 操作
+6. 发布到 NPM
+7. 验证发布成功
 
-#### Automated Release Commands
+#### 自动化发布命令
 
 ```bash
-# Dry run mode (no actual changes)
+# 试运行模式（无实际更改）
 npm run release:dry
 
-# Direct version releases
-npm run release:patch-auto    # Patch version (1.0.0 → 1.0.1)
-npm run release:minor-auto    # Minor version (1.0.0 → 1.1.0)
-npm run release:major-auto    # Major version (1.0.0 → 2.0.0)
+# 直接版本发布
+npm run release:patch-auto    # Patch 版本 (1.0.0 → 1.0.1)
+npm run release:minor-auto    # Minor 版本 (1.0.0 → 1.1.0)
+npm run release:major-auto    # Major 版本 (1.0.0 → 2.0.0)
 ```
 
-#### Advanced Options
+#### 高级选项
 
 ```bash
-# Direct script execution with options
-node scripts/release.js [options]
+# 带选项的直接脚本执行
+node scripts/release.js [选项]
 
-Options:
-  --dry-run, -d     Run in dry mode (no actual changes)
-  --version, -v     Specify version type (patch|minor|major)
-  --skip-tests, -s  Skip test execution
-  --help, -h        Show help information
+选项:
+  --dry-run, -d     试运行模式（无实际更改）
+  --version, -v     指定版本类型 (patch|minor|major)
+  --skip-tests, -s  跳过测试执行
+  --help, -h        显示帮助信息
 ```
 
-#### Examples
+#### 示例
 
 ```bash
-# Interactive release with dry run
+# 试运行的交互式发布
 node scripts/release.js --dry-run
 
-# Automated patch release
+# 自动化 patch 发布
 node scripts/release.js --version patch
 
-# Skip tests and do minor release
+# 跳过测试的 minor 发布
 node scripts/release.js --version minor --skip-tests
 
-# Dry run with major version and skip tests
+# 跳过测试的 major 版本试运行
 node scripts/release.js -d -v major -s
 ```
 
-### Process Overview
+### 流程概览
 
-#### 1. Pre-flight Checks
-- ✅ Git working tree status (warns about uncommitted changes)
-- ✅ Current Git branch validation (recommends main/master)
-- ✅ NPM authentication status
-- ✅ Dependencies installation and health
-- ✅ Network connectivity to NPM registry
+#### 1. 预检查
+- ✅ Git 工作树状态（警告未提交的更改）
+- ✅ 当前 Git 分支验证（推荐 main/master）
+- ✅ NPM 认证状态
+- ✅ 依赖项安装和健康检查
+- ✅ 到 NPM registry 的网络连接
 
-#### 2. Build and Test
-- 🧹 Clean previous build artifacts
-- 🔍 TypeScript type checking
-- 📋 ESLint code quality (with auto-fix attempt)
-- 🔨 Project compilation
-- 🧪 Test execution (if not skipped)
-- 📦 Package integrity verification
+#### 2. 构建和测试
+- 🧹 清理之前的构建产物
+- 🔍 TypeScript 类型检查
+- 📋 ESLint 代码质量检查（尝试自动修复）
+- 🔨 项目编译
+- 🧪 测试执行（如果未跳过）
+- 📦 包完整性验证
 
-#### 3. Version Management
-- 📊 Display current version
-- 🎯 Interactive or automated version type selection
-- 📈 Calculate and preview new version
-- ✅ User confirmation for version update
-- 📝 Update package.json
+#### 3. 版本管理
+- 📊 显示当前版本
+- 🎯 交互式或自动化版本类型选择
+- 📈 计算并预览新版本
+- ✅ 用户确认版本更新
+- 📝 更新 package.json
 
-#### 4. Git Operations
-- 💾 Commit version changes
-- 🏷️ Create version tag (v1.0.0 format)
-- ⬆️ Push commits and tags to remote
+#### 4. Git 操作
+- 💾 提交版本更改
+- 🏷️ 创建版本标签（v1.0.0 格式）
+- ⬆️ 推送提交和标签到远程
 
-#### 5. NPM Publishing
-- 📤 Publish package to NPM registry
-- ⏳ Wait for registry propagation
-- ✅ Verify successful publication
+#### 5. NPM 发布
+- 📤 发布包到 NPM registry
+- ⏳ 等待 registry 传播
+- ✅ 验证发布成功
 
-### Error Handling and Rollback
+### 错误处理和回滚
 
-The automated script includes comprehensive error handling:
+自动化脚本包含全面的错误处理：
 
-- **Automatic rollback** on failure (when possible)
-- **Version rollback** - Reverts package.json changes
-- **Git rollback** - Removes commits and tags
-- **Detailed error logging** - Full audit trail in `release.log`
-- **Graceful failure** - Clean exit with helpful error messages
+- **失败时自动回滚**（尽可能）
+- **版本回滚** - 恢复 package.json 更改
+- **Git 回滚** - 删除提交和标签
+- **详细错误日志** - `release.log` 中的完整审计记录
+- **优雅失败** - 带有有用错误信息的干净退出
 
-### Logging
+### 日志记录
 
-All release operations are logged to `release.log` with:
-- Timestamps for all operations
-- Step-by-step execution details
-- Error messages and stack traces
-- Release duration and summary
+所有发布操作都记录到 `release.log`，包含：
+- 所有操作的时间戳
+- 逐步执行详情
+- 错误信息和堆栈跟踪
+- 发布持续时间和摘要
 
-### Migration from Legacy Scripts
+### 从旧脚本迁移
 
-The legacy release scripts are still available:
+旧版发布脚本仍然可用：
 ```bash
-npm run release:patch    # Old: npm version patch && npm publish
-npm run release:minor    # Old: npm version minor && npm publish  
-npm run release:major    # Old: npm version major && npm publish
+npm run release:patch    # 旧版: npm version patch && npm publish
+npm run release:minor    # 旧版: npm version minor && npm publish
+npm run release:major    # 旧版: npm version major && npm publish
 ```
 
-However, the new automated script (`npm run release`) is recommended as it includes comprehensive checks and better error handling.
+但是，推荐使用新的自动化脚本（`npm run release`），因为它包含全面的检查和更好的错误处理。
 
 ---
 
-## Manual Publishing Steps
+## 手动发布步骤
 
-For those who prefer manual control or need to understand the underlying process, here's the step-by-step manual approach.
+对于那些喜欢手动控制或需要了解底层流程的人，这里是逐步的手动方法。
 
-### Pre-Publishing Checklist
+### 发布前检查清单
 
-#### 1. Verify Package Configuration
+#### 1. 验证包配置
 
-Check your `package.json` file:
+检查你的 `package.json` 文件：
 
 ```json
 {
@@ -187,117 +188,117 @@ Check your `package.json` file:
 }
 ```
 
-#### 2. Build and Test the Package
+#### 2. 构建和测试包
 
 ```bash
-# Navigate to project directory
+# 导航到项目目录
 cd D:\work\RN\react-native-auto-positioned-popup
 
-# Install dependencies
+# 安装依赖
 npm install
 
-# Build the TypeScript files
+# 构建 TypeScript 文件
 npm run build
 
-# Verify build output
+# 验证构建输出
 ls lib/
 ```
 
-#### 3. Test Package Locally
+#### 3. 本地测试包
 
-Test the package locally before publishing:
+发布前本地测试包：
 
 ```bash
-# Create a tarball
+# 创建 tarball
 npm pack
 
-# This creates a .tgz file you can install in test projects
+# 这会创建一个 .tgz 文件，你可以在测试项目中安装
 # npm install ./react-native-auto-positioned-popup-1.0.0.tgz
 ```
 
-### Publishing Steps
+### 发布步骤
 
-#### Step 1: Login to npm
+#### 步骤 1: 登录 npm
 
 ```bash
 npm login
 ```
 
-Enter your npm credentials:
-- Username
-- Password
-- Email
-- One-time password (if 2FA is enabled)
+输入你的 npm 凭据：
+- 用户名
+- 密码
+- 邮箱
+- 一次性密码（如果启用了 2FA）
 
-#### Step 2: Verify Login Status
+#### 步骤 2: 验证登录状态
 
 ```bash
 npm whoami
 ```
 
-This should return your npm username.
+这应该返回你的 npm 用户名。
 
-#### Step 3: Final Pre-Publish Checks
+#### 步骤 3: 最终发布前检查
 
 ```bash
-# Check what files will be published
+# 检查哪些文件将被发布
 npm pack --dry-run
 
-# Lint the code (optional)
+# 代码检查（可选）
 npm run lint
 
-# Run tests (if available)
+# 运行测试（如果可用）
 npm test
 ```
 
-#### Step 4: Publish to npm
+#### 步骤 4: 发布到 npm
 
-For first time publishing:
+首次发布：
 
 ```bash
 npm publish
 ```
 
-For updates (remember to update version number first):
+更新时（记得先更新版本号）：
 
 ```bash
-# Update version automatically
-npm version patch  # for bug fixes
-npm version minor  # for new features
-npm version major  # for breaking changes
+# 自动更新版本
+npm version patch  # 用于 bug 修复
+npm version minor  # 用于新功能
+npm version major  # 用于破坏性变更
 
-# Then publish
+# 然后发布
 npm publish
 ```
 
-#### Step 5: Verify Publication
+#### 步骤 5: 验证发布
 
-1. Check on [npmjs.com](https://npmjs.com):
-   - Visit https://npmjs.com/package/react-native-auto-positioned-popup
-   - Verify package information, README, and files
+1. 在 [npmjs.com](https://npmjs.com) 上检查：
+   - 访问 https://npmjs.com/package/react-native-auto-positioned-popup
+   - 验证包信息、README 和文件
 
-2. Test installation:
+2. 测试安装：
    ```bash
-   # In a separate project
+   # 在另一个项目中
    npm install react-native-auto-positioned-popup
    ```
 
-### Post-Publishing Tasks
+### 发布后任务
 
-#### 1. Update GitHub Repository
+#### 1. 更新 GitHub 仓库
 
-If you have a GitHub repository:
+如果你有 GitHub 仓库：
 
 ```bash
 git add .
-git commit -m "v1.0.0: Initial npm publication"
+git commit -m "v1.0.0: 首次 npm 发布"
 git tag v1.0.0
 git push origin main --tags
 ```
 
-#### 2. Update Package Links
+#### 2. 更新包链接
 
-Update `package.json` with correct repository URLs:
+用正确的仓库 URL 更新 `package.json`：
 
 ```json
 {
@@ -312,29 +313,29 @@ Update `package.json` with correct repository URLs:
 }
 ```
 
-#### 3. Create GitHub Release
+#### 3. 创建 GitHub Release
 
-On GitHub:
-1. Go to your repository
-2. Click "Releases" → "Create a new release"
-3. Tag: `v1.0.0`
-4. Title: `v1.0.0 - Initial Release`
-5. Description: Copy from CHANGELOG or README
+在 GitHub 上：
+1. 进入你的仓库
+2. 点击 "Releases" → "Create a new release"
+3. 标签：`v1.0.0`
+4. 标题：`v1.0.0 - 首次发布`
+5. 描述：从 CHANGELOG 或 README 复制
 
 ---
 
-## Version Management
+## 版本管理
 
-### Semantic Versioning (SemVer)
+### 语义化版本（SemVer）
 
-Follow semantic versioning:
-- **Major** (1.0.0 → 2.0.0): Breaking changes
-- **Minor** (1.0.0 → 1.1.0): New features, backward compatible
-- **Patch** (1.0.0 → 1.0.1): Bug fixes, backward compatible
+遵循语义化版本：
+- **Major** (1.0.0 → 2.0.0): 破坏性变更
+- **Minor** (1.0.0 → 1.1.0): 新功能，向后兼容
+- **Patch** (1.0.0 → 1.0.1): Bug 修复，向后兼容
 
-### Available Scripts
+### 可用脚本
 
-Current package.json scripts for version management:
+当前用于版本管理的 package.json 脚本：
 
 ```json
 {
@@ -353,252 +354,252 @@ Current package.json scripts for version management:
 
 ---
 
-## Troubleshooting
+## 故障排除
 
-### Common Issues and Solutions
+### 常见问题和解决方案
 
-#### NPM Authentication Issues
+#### NPM 认证问题
 ```bash
-# Issue: Authentication failed
+# 问题：认证失败
 npm login
-npm whoami  # Verify login
+npm whoami  # 验证登录
 ```
 
-#### Git Working Tree Issues
+#### Git 工作树问题
 ```bash
-# Issue: Working tree has uncommitted changes
+# 问题：工作树有未提交的更改
 git status
-git add . && git commit -m "commit changes before release"
-# Or use --dry-run to test first
+git add . && git commit -m "发布前提交更改"
+# 或使用 --dry-run 先测试
 npm run release:dry
 ```
 
-#### Build Issues
+#### 构建问题
 ```bash
-# Check TypeScript errors
+# 检查 TypeScript 错误
 npm run type-check
 
-# Check ESLint issues
+# 检查 ESLint 问题
 npm run lint
 
-# Verify all dependencies
+# 验证所有依赖
 npm install
 ```
 
-#### Network Issues
+#### 网络问题
 ```bash
-# Check NPM registry connectivity
+# 检查 NPM registry 连接
 npm ping
 
-# Verify internet connection
+# 验证网络连接
 ```
 
-#### Package Name Issues
+#### 包名问题
 ```
-Error: Package name already exists
+错误：包名已存在
 ```
-Solution: Choose a unique package name or add scope (@yourname/package-name)
+解决方案：选择唯一的包名或添加作用域（@yourname/package-name）
 
-#### Version Already Published
+#### 版本已发布
 ```
-Error: Version 1.0.0 already published
+错误：版本 1.0.0 已发布
 ```
-Solution: Update version number with `npm version patch`
+解决方案：使用 `npm version patch` 更新版本号
 
-#### Build Files Missing
+#### 构建文件缺失
 ```
-Error: Cannot find main entry point
+错误：找不到主入口点
 ```
-Solution: Run `npm run build` before publishing
+解决方案：发布前运行 `npm run build`
 
-### Manual Push and Publish Methods
+### 手动推送和发布方法
 
-When automated release encounters network issues or Git push failures, use these manual methods:
+当自动化发布遇到网络问题或 Git 推送失败时，使用这些手动方法：
 
-#### Method 1: Manual Push with Git Bash
+#### 方法 1：使用 Git Bash 手动推送
 
 ```bash
-# 1. Push commits to remote repository
+# 1. 推送提交到远程仓库
 git push origin main
 
-# 2. Push tags to remote repository
+# 2. 推送标签到远程仓库
 git push origin v1.0.1
 
-# 3. Publish to NPM
+# 3. 发布到 NPM
 npm publish
 ```
 
-#### Method 2: Using Proxy for Network Issues
+#### 方法 2：使用代理解决网络问题
 
 ```bash
-# Set Git proxy (adjust to your proxy configuration)
+# 设置 Git 代理（根据你的代理配置调整）
 git config --global http.proxy http://127.0.0.1:7890
 git config --global https.proxy http://127.0.0.1:7890
 
-# Push changes
+# 推送更改
 git push origin main
 git push origin v1.0.1
 
-# Clear proxy configuration (after successful push)
+# 成功推送后清除代理配置
 git config --global --unset http.proxy
 git config --global --unset https.proxy
 ```
 
-#### Method 3: Using SSH Instead of HTTPS
+#### 方法 3：使用 SSH 代替 HTTPS
 
 ```bash
-# 1. Change remote URL to SSH
+# 1. 将远程 URL 更改为 SSH
 git remote set-url origin git@github.com:StarksJohn/react-native-auto-positioned-popup.git
 
-# 2. Push changes
+# 2. 推送更改
 git push origin main
 git push origin v1.0.1
 
-# 3. Publish to NPM
+# 3. 发布到 NPM
 npm publish
 ```
 
-#### Method 4: Using Personal Access Token (PAT)
+#### 方法 4：使用个人访问令牌（PAT）
 
 ```bash
-# 1. Create personal access token on GitHub
-# Settings -> Developer settings -> Personal access tokens -> Generate new token
+# 1. 在 GitHub 上创建个人访问令牌
+# 设置 -> 开发者设置 -> 个人访问令牌 -> 生成新令牌
 
-# 2. Push using token
+# 2. 使用令牌推送
 git push https://YOUR_GITHUB_TOKEN@github.com/StarksJohn/react-native-auto-positioned-popup.git main
 git push https://YOUR_GITHUB_TOKEN@github.com/StarksJohn/react-native-auto-positioned-popup.git v1.0.1
 ```
 
-#### Manual Release Recovery
+#### 手动发布恢复
 
-If you need to rollback a failed release:
+如果需要回滚失败的发布：
 
 ```bash
-# Delete local tag
+# 删除本地标签
 git tag -d v1.0.1
 
-# Reset to previous commit
+# 重置到上一个提交
 git reset --hard HEAD~1
 
-# Restore version number in package.json
-# Edit package.json to revert version number
+# 恢复 package.json 中的版本号
+# 编辑 package.json 恢复版本号
 ```
 
-#### Manual Release Verification
+#### 手动发布验证
 
 ```bash
-# Check NPM publication status
+# 检查 NPM 发布状态
 npm view react-native-auto-positioned-popup@1.0.1
 
-# Check GitHub repository
+# 检查 GitHub 仓库
 git log origin/main --oneline -1
 ```
 
-#### Important Notes for Manual Release
+#### 手动发布重要说明
 
-- Ensure you're logged into NPM: `npm whoami`
-- If not logged in, use: `npm login`
-- Verify GitHub repository push permissions
-- Consider testing on a feature branch first
-- Always verify the release succeeded before closing terminal
+- 确保已登录 NPM：`npm whoami`
+- 如果未登录，使用：`npm login`
+- 验证 GitHub 仓库推送权限
+- 考虑先在功能分支上测试
+- 关闭终端前始终验证发布成功
 
-### Getting Help
+### 获取帮助
 
-For automated release script:
+对于自动化发布脚本：
 ```bash
 node scripts/release.js --help
 ```
 
-Check detailed logs:
+检查详细日志：
 ```bash
 cat release.log
 ```
 
 ---
 
-## Best Practices
+## 最佳实践
 
-### Development Workflow
-1. **Always test first** - Use `npm run release:dry` to verify the process
-2. **Clean working tree** - Commit changes before releasing  
-3. **Review changes** - Check what will be published with `npm run pack-test`
-4. **Monitor publication** - Verify package appears on npmjs.com
-5. **Keep logs** - Review `release.log` for any warnings or issues
+### 开发工作流程
+1. **始终先测试** - 使用 `npm run release:dry` 验证流程
+2. **干净的工作树** - 发布前提交更改
+3. **审查更改** - 使用 `npm run pack-test` 检查将发布的内容
+4. **监控发布** - 验证包出现在 npmjs.com 上
+5. **保留日志** - 查看 `release.log` 中的任何警告或问题
 
-### Version Management
-6. **Use semantic versioning** - Follow semver guidelines for version selection
-7. **Tag releases** - Use Git tags for version management
-8. **Update documentation** - Keep README and CHANGELOG current
+### 版本管理
+6. **使用语义化版本** - 遵循 semver 版本选择指南
+7. **标记发布** - 使用 Git 标签进行版本管理
+8. **更新文档** - 保持 README 和 CHANGELOG 最新
 
-### Testing and Quality
-9. **Always test before publishing** - Use `npm pack` and test locally
-10. **Keep .npmignore updated** - Don't publish unnecessary files
-11. **Write good commit messages** - For version tracking
-12. **Monitor downloads** - Check npm stats regularly
+### 测试和质量
+9. **发布前始终测试** - 使用 `npm pack` 并本地测试
+10. **保持 .npmignore 更新** - 不要发布不必要的文件
+11. **写好提交信息** - 用于版本跟踪
+12. **监控下载量** - 定期检查 npm 统计
 
-### Automation
-13. **Prefer automated releases** - Use `npm run release` for consistency
-14. **Use dry-run mode** - Test releases before executing
-15. **Review automation logs** - Check `release.log` for issues
-
----
-
-## Security Considerations
-
-### Account Security
-1. **Enable 2FA** - Protect your npm account with two-factor authentication
-2. **Use automation tokens** - For CI/CD pipelines instead of passwords
-3. **Scope packages** - Consider using scoped packages (@yourname/package)
+### 自动化
+13. **首选自动化发布** - 使用 `npm run release` 保持一致性
+14. **使用试运行模式** - 执行前测试发布
+15. **审查自动化日志** - 检查 `release.log` 中的问题
 
 ---
 
-## 🔑 NPM Automation Token Configuration (Bypass 2FA)
+## 安全注意事项
 
-To enable fully automated releases without requiring 2FA verification each time, you must configure an NPM Automation Token with the "Bypass 2FA" option enabled.
+### 账户安全
+1. **启用 2FA** - 使用双因素认证保护你的 npm 账户
+2. **使用自动化令牌** - 在 CI/CD 管道中使用令牌而非密码
+3. **作用域包** - 考虑使用作用域包（@yourname/package）
 
-### Step 1: Create Granular Access Token
+---
 
-1. Visit https://www.npmjs.com/settings/YOUR_USERNAME/tokens
-2. Click **"Generate New Token"** → **"Granular Access Token"**
+## 🔑 NPM 自动化令牌配置（绕过 2FA）
 
-### Step 2: Configure Token Settings
+要启用完全自动化的发布而无需每次进行 2FA 验证，你必须配置一个启用了"绕过 2FA"选项的 NPM 自动化令牌。
 
-| Setting | Recommended Value |
-|---------|-------------------|
-| **Token name** | `auto-publish` |
-| **Description** | Used for automated releases |
-| **⚠️ Bypass two-factor authentication (2FA)** | ✅ **MUST CHECK THIS** |
-| **Allowed IP ranges** | (optional) Leave empty for any IP |
-| **Permissions** | `Read and write` |
-| **Select packages** | `All packages` or specific package |
-| **Expiration Date** | Set a reasonable expiration (e.g., 1 year) |
+### 步骤 1：创建细粒度访问令牌
 
-### Step 3: Generate and Save Token
+1. 访问 https://www.npmjs.com/settings/YOUR_USERNAME/tokens
+2. 点击 **"Generate New Token"** → **"Granular Access Token"**
 
-1. Click **"Generate token"**
-2. **IMPORTANT**: Copy the token immediately - it will only be shown once!
-3. Token format: `npm_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`
+### 步骤 2：配置令牌设置
 
-### Step 4: Configure Token in Your System
+| 设置 | 推荐值 |
+|------|--------|
+| **Token name（令牌名称）** | `auto-publish` |
+| **Description（描述）** | 用于自动化发布 |
+| **⚠️ Bypass two-factor authentication (2FA)（绕过双因素认证）** | ✅ **必须勾选此项** |
+| **Allowed IP ranges（允许的 IP 范围）** | （可选）留空表示任何 IP |
+| **Permissions（权限）** | `Read and write` |
+| **Select packages（选择包）** | `All packages` 或特定包 |
+| **Expiration Date（过期日期）** | 设置合理的过期时间（如 1 年） |
 
-#### Option A: Global Configuration (Recommended)
+### 步骤 3：生成并保存令牌
+
+1. 点击 **"Generate token"**
+2. **重要**：立即复制令牌 - 它只会显示一次！
+3. 令牌格式：`npm_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`
+
+### 步骤 4：在系统中配置令牌
+
+#### 选项 A：全局配置（推荐）
 
 ```bash
-# Set token globally for your user
+# 为你的用户全局设置令牌
 npm config set //registry.npmjs.org/:_authToken=npm_YOUR_TOKEN_HERE
 ```
 
-This saves the token to `~/.npmrc` (or `C:\Users\USERNAME\.npmrc` on Windows).
+这会将令牌保存到 `~/.npmrc`（Windows 上是 `C:\Users\USERNAME\.npmrc`）。
 
-#### Option B: Project-level Configuration
+#### 选项 B：项目级配置
 
-Create a `.npmrc` file in your project root:
+在项目根目录创建 `.npmrc` 文件：
 
 ```
 //registry.npmjs.org/:_authToken=${NPM_TOKEN}
 ```
 
-Then set the environment variable:
+然后设置环境变量：
 
 ```bash
 # Windows PowerShell
@@ -611,9 +612,9 @@ set NPM_TOKEN=npm_YOUR_TOKEN_HERE
 export NPM_TOKEN=npm_YOUR_TOKEN_HERE
 ```
 
-#### Option C: CI/CD Environment
+#### 选项 C：CI/CD 环境
 
-For GitHub Actions, add the token as a repository secret:
+对于 GitHub Actions，将令牌添加为仓库密钥：
 
 ```yaml
 # .github/workflows/publish.yml
@@ -623,159 +624,157 @@ For GitHub Actions, add the token as a repository secret:
     NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 ```
 
-### Step 5: Verify Token Configuration
+### 步骤 5：验证令牌配置
 
 ```bash
-# Verify authentication
+# 验证认证
 npm whoami
 
-# Should output your npm username
+# 应该输出你的 npm 用户名
 ```
 
-### Troubleshooting Token Issues
+### 令牌问题故障排除
 
-#### Error: "401 Unauthorized"
+#### 错误："401 Unauthorized"
 
-**Cause**: Token is invalid, expired, or "Bypass 2FA" was not checked.
+**原因**：令牌无效、已过期或未勾选"绕过 2FA"。
 
-**Solution**:
-1. Delete the old token on npmjs.com
-2. Create a new token with ✅ "Bypass two-factor authentication (2FA)" checked
-3. Reconfigure the new token
+**解决方案**：
+1. 在 npmjs.com 上删除旧令牌
+2. 创建新令牌并勾选 ✅ "Bypass two-factor authentication (2FA)"
+3. 重新配置新令牌
 
-#### Error: "403 Forbidden - Two-factor authentication required"
+#### 错误："403 Forbidden - Two-factor authentication required"
 
-**Cause**: Token was created without checking "Bypass 2FA" option.
+**原因**：创建令牌时未勾选"绕过 2FA"选项。
 
-**Solution**:
-1. Go to https://www.npmjs.com/settings/YOUR_USERNAME/tokens
-2. Delete the problematic token
-3. Create a new Granular Access Token
-4. **IMPORTANT**: Check ✅ "Bypass two-factor authentication (2FA)"
-5. Reconfigure with the new token
+**解决方案**：
+1. 访问 https://www.npmjs.com/settings/YOUR_USERNAME/tokens
+2. 删除有问题的令牌
+3. 创建新的细粒度访问令牌
+4. **重要**：勾选 ✅ "Bypass two-factor authentication (2FA)"
+5. 重新配置新令牌
 
-#### Error: "Access token expired or revoked"
+#### 错误："Access token expired or revoked"
 
-**Cause**: Token has expired or was manually revoked.
+**原因**：令牌已过期或被手动撤销。
 
-**Solution**:
-1. Generate a new token on npmjs.com
-2. Update the token in your `.npmrc` file
+**解决方案**：
+1. 在 npmjs.com 上生成新令牌
+2. 更新 `.npmrc` 文件中的令牌
 
-### Security Best Practices for Automation Tokens
+### 自动化令牌安全最佳实践
 
-1. **Set expiration dates** - Don't use tokens that never expire
-2. **Limit package scope** - If possible, limit token to specific packages
-3. **Use IP restrictions** - Add allowed IP ranges if your deployment IPs are static
-4. **Rotate tokens regularly** - Replace tokens periodically
-5. **Never commit tokens** - Add `.npmrc` to `.gitignore` if it contains tokens
-6. **Use environment variables** - Prefer `${NPM_TOKEN}` pattern over hardcoded tokens
+1. **设置过期日期** - 不要使用永不过期的令牌
+2. **限制包作用域** - 如果可能，将令牌限制为特定包
+3. **使用 IP 限制** - 如果部署 IP 是静态的，添加允许的 IP 范围
+4. **定期轮换令牌** - 定期更换令牌
+5. **永不提交令牌** - 如果 `.npmrc` 包含令牌，将其添加到 `.gitignore`
+6. **使用环境变量** - 首选 `${NPM_TOKEN}` 模式而非硬编码令牌
 
-### Current Token Status
+### 当前令牌状态
 
-Check your token status at: https://www.npmjs.com/settings/stark2018/tokens
+在此检查你的令牌状态：https://www.npmjs.com/settings/stark2018/tokens
 
-| Token Name | Created | Expires | Bypass 2FA |
-|------------|---------|---------|------------|
-| auto-publish | Dec 24, 2025 | Mar 24, 2026 | ❌ (needs recreation) |
+| 令牌名称 | 创建时间 | 过期时间 | 绕过 2FA |
+|----------|----------|----------|----------|
+| auto-publish | 2025年12月24日 | 2026年3月24日 | ✅ 已启用 |
 
-**Action Required**: Recreate the `auto-publish` token with "Bypass 2FA" checked.
+### 代码安全
+4. **审查依赖** - 定期审计依赖项的漏洞
+5. **永不暴露凭据** - 脚本永不暴露 NPM 凭据
+6. **使用试运行验证** - 所有操作都可以在试运行模式下审查
 
-### Code Security  
-4. **Review dependencies** - Regularly audit dependencies for vulnerabilities
-5. **Never expose credentials** - Script never exposes NPM credentials
-6. **Use dry-run for validation** - All operations can be reviewed in dry-run mode
-
-### Release Security
-7. **Rollback capabilities** - Minimize risk of partial releases
-8. **Comprehensive logging** - Provides audit trail for all operations
-9. **Repository permissions** - Git operations require proper permissions
+### 发布安全
+7. **回滚功能** - 最小化部分发布的风险
+8. **全面日志** - 为所有操作提供审计记录
+9. **仓库权限** - Git 操作需要适当的权限
 
 ---
 
-## Maintenance
+## 维护
 
-### Regular Tasks
+### 定期任务
 
-1. **Update dependencies** - Keep dependencies current
-2. **Monitor issues** - Respond to GitHub issues and npm feedback
-3. **Security updates** - Address security vulnerabilities promptly
-4. **Documentation** - Keep documentation updated with new features
-5. **Review automation** - Periodically check release script performance
+1. **更新依赖** - 保持依赖项最新
+2. **监控问题** - 回应 GitHub issues 和 npm 反馈
+3. **安全更新** - 及时处理安全漏洞
+4. **文档** - 随新功能更新文档
+5. **审查自动化** - 定期检查发布脚本性能
 
-### Deprecation Process
+### 废弃流程
 
-If you need to deprecate a version:
+如果需要废弃一个版本：
 
 ```bash
-# Deprecate a specific version
-npm deprecate react-native-auto-positioned-popup@1.0.0 "This version has a security vulnerability"
+# 废弃特定版本
+npm deprecate react-native-auto-positioned-popup@1.0.0 "此版本存在安全漏洞"
 
-# Deprecate all versions
-npm deprecate react-native-auto-positioned-popup "Package no longer maintained"
+# 废弃所有版本
+npm deprecate react-native-auto-positioned-popup "包不再维护"
 ```
 
-### Configuration Management
+### 配置管理
 
-The automated script uses the following default behavior:
-- Builds to `lib/` directory
-- Runs TypeScript compilation
-- Executes ESLint with auto-fix
-- Creates conventional commit messages
-- Uses semantic versioning (semver)
-
----
-
-## Success Checklist
-
-- [ ] Package builds successfully (`npm run build`)
-- [ ] All files included in build (`npm run pack-test`)
-- [ ] README is comprehensive
-- [ ] Version number is correct
-- [ ] Git repository is clean and tagged
-- [ ] npm login successful (`npm whoami`)
-- [ ] Package published successfully
-- [ ] Installation test passed (`npm install package-name`)
-- [ ] Documentation links work
-- [ ] GitHub release created (if applicable)
-- [ ] Automation script tested (`npm run release:dry`)
+自动化脚本使用以下默认行为：
+- 构建到 `lib/` 目录
+- 运行 TypeScript 编译
+- 执行带自动修复的 ESLint
+- 创建规范的提交信息
+- 使用语义化版本（semver）
 
 ---
 
-## Resources
+## 成功检查清单
 
-- [npm documentation](https://docs.npmjs.com/)
-- [Semantic Versioning](https://semver.org/)
-- [npm best practices](https://docs.npmjs.com/misc/developers)
-- [TypeScript declaration files](https://www.typescriptlang.org/docs/handbook/declaration-files/introduction.html)
-- [Node.js Package Management](https://nodejs.org/en/knowledge/getting-started/npm/what-is-npm/)
+- [ ] 包构建成功（`npm run build`）
+- [ ] 所有文件包含在构建中（`npm run pack-test`）
+- [ ] README 内容完整
+- [ ] 版本号正确
+- [ ] Git 仓库干净并已打标签
+- [ ] npm 登录成功（`npm whoami`）
+- [ ] 包发布成功
+- [ ] 安装测试通过（`npm install package-name`）
+- [ ] 文档链接有效
+- [ ] GitHub release 已创建（如适用）
+- [ ] 自动化脚本已测试（`npm run release:dry`）
 
 ---
 
-## Quick Reference
+## 资源
 
-### Most Common Commands
+- [npm 文档](https://docs.npmjs.com/)
+- [语义化版本](https://semver.org/)
+- [npm 最佳实践](https://docs.npmjs.com/misc/developers)
+- [TypeScript 声明文件](https://www.typescriptlang.org/docs/handbook/declaration-files/introduction.html)
+- [Node.js 包管理](https://nodejs.org/en/knowledge/getting-started/npm/what-is-npm/)
+
+---
+
+## 快速参考
+
+### 最常用命令
 
 ```bash
-# Automated release (recommended)
+# 自动化发布（推荐）
 npm run release
 
-# Test release process
+# 测试发布流程
 npm run release:dry
 
-# Quick patch release
+# 快速 patch 发布
 npm run release:patch-auto
 
-# Manual release
+# 手动发布
 npm version patch
 npm publish
 
-# Get help
+# 获取帮助
 node scripts/release.js --help
 ```
 
 ---
 
-**Good luck with your package publication!** 🚀
+**祝你包发布顺利！** 🚀
 
-*For questions or issues with the automated release system, check the `release.log` file or run with `--dry-run` to troubleshoot.*
+*如有自动化发布系统的问题，请检查 `release.log` 文件或使用 `--dry-run` 进行故障排除。*
