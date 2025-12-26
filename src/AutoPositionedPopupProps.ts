@@ -1,7 +1,8 @@
-import React from 'react';
+import React, {RefObject} from 'react';
 import {StyleProp, TextInputProps, TextStyle, ViewStyle} from 'react-native';
 import {TextInputSubmitEditingEventData} from 'react-native/Libraries/Components/TextInput/TextInput';
 import {NativeSyntheticEvent} from 'react-native/Libraries/Types/CoreEventTypes';
+import {KeyboardAwareScrollView} from 'react-native-keyboard-aware-scroll-view';
 
 export interface SelectedItem {
   id: string;
@@ -188,4 +189,25 @@ export interface AutoPositionedPopupProps {
    */
   onChangeText?: ((text: string) => void) | undefined;
   themeMode?: string | null | undefined;//light | dark
+  /**
+   * Reference to parent KeyboardAwareScrollView for auto-scrolling when keyboard appears.
+   * When provided, the component will scroll the parent to keep the trigger button visible
+   * above the keyboard.
+   *
+   * Example usage:
+   * const scrollViewRef = useRef<KeyboardAwareScrollView>(null);
+   * <KeyboardAwareScrollView ref={scrollViewRef}>
+   *   <RNAutoPositionedPopup
+   *     parentScrollViewRef={scrollViewRef}
+   *     ...
+   *   />
+   * </KeyboardAwareScrollView>
+   */
+  parentScrollViewRef?: RefObject<KeyboardAwareScrollView>;
+  /**
+   * Extra height to add when scrolling to make trigger visible.
+   * Useful for adding padding between the trigger and keyboard.
+   * Default: 100
+   */
+  scrollExtraHeight?: number;
 }

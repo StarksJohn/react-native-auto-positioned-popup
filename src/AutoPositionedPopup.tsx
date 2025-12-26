@@ -13,12 +13,14 @@ import React, {
 } from 'react';
 import {
   Dimensions,
+  findNodeHandle,
   Keyboard,
   Platform,
   StatusBar,
   Text,
   TextInput as RNTextInput,
   TouchableOpacity,
+  UIManager,
   View,
 } from 'react-native';
 import {AdvancedFlatList, ListData, FetchDataParams} from 'react-native-advanced-flatlist';
@@ -346,6 +348,7 @@ const AutoPositionedPopup = memo(
         selectedItemBackgroundColor = 'rgba(116, 116, 128, 0.08)',
         // textAlign = 'right',
         CustomPopView = undefined, CustomPopViewStyle, showListEmptyComponent = true, emptyText = '', onChangeText, themeMode = 'light',
+        parentScrollViewRef, scrollExtraHeight = 100,
       } = props;
       // State management similar to project implementation
       const [state, setState] = useState<StateProps>({
@@ -365,6 +368,8 @@ const AutoPositionedPopup = memo(
       const keyboardVisibleRef = useRef(false);
       const refAutoPositionedPopup = useRef<View>(null);
       const ref_searchQuery = useRef<string>('');
+      // Store trigger button position when clicked (before it's replaced by TextInput)
+      const triggerPositionRef = useRef<{x: number; y: number; width: number; height: number} | null>(null);
       // Add ref to track previous keyboard state to avoid false triggers during parent component re-renders
       const prevIsKeyboardFullyShownRef = useRef<boolean>(false);
       const prevPropsRef = useRef<{
@@ -405,6 +410,141 @@ const AutoPositionedPopup = memo(
         ref_isKeyboardFullyShown.current = isKeyboardFullyShown;
       }, [isKeyboardFullyShown])
       const theme = defaultTheme;
+
+      /**
+       * Scrolls the parent KeyboardAwareScrollView to make the trigger button visible
+       * when keyboard appears and may cover the trigger.
+       * Uses the triggerBtnRef to measure position and scrolls parent accordingly.
+       */
+      const scrollParentToTrigger = useCallback(() => {
+        if (!parentScrollViewRef?.current || !triggerBtnRef.current) {
+          console.log('AutoPositionedPopup scrollParentToTrigger: No parentScrollViewRef or triggerBtnRef available');
+          return;
+        }
+
+        // Use scrollToFocusedInput method from KeyboardAwareScrollView
+        // This method scrolls the ScrollView to make the specified node visible
+        const scrollView = parentScrollViewRef.current;
+        const nodeHandle = findNodeHandle(triggerBtnRef.current);
+
+        if (nodeHandle && scrollView) {
+          console.log('AutoPositionedPopup scrollParentToTrigger: Scrolling to trigger button with extraHeight=', scrollExtraHeight);
+
+          // KeyboardAwareScrollView has a scrollToFocusedInput method that handles this
+          // However, it requires a ReactNode. We'll use scrollToPosition as an alternative.
+          // First, measure the trigger button position relative to the ScrollView
+          triggerBtnRef.current.measureInWindow((x, y, width, height) => {
+            if (y === undefined || height === undefined) {
+              console.log('AutoPositionedPopup scrollParentToTrigger: measureInWindow returned undefined');
+              return;
+            }
+
+            console.log('AutoPositionedPopup scrollParentToTrigger: trigger position=', { x, y, width, height });
+
+            // Get keyboard height from Keyboard API
+            // On keyboard show, scroll to position that keeps trigger above keyboard
+            Keyboard.addListener('keyboardDidShow', (event) => {
+              const keyboardHeight = event.endCoordinates.height;
+              const screenHeight = Dimensions.get('window').height;
+
+              // Calculate if trigger is below keyboard
+              const triggerBottom = y + height;
+              const visibleAreaBottom = screenHeight - keyboardHeight;
+
+              console.log('AutoPositionedPopup scrollParentToTrigger: keyboard data=', {
+                keyboardHeight,
+                screenHeight,
+                triggerBottom,
+                visibleAreaBottom,
+                needsScroll: triggerBottom > visibleAreaBottom
+              });
+
+              if (triggerBottom > visibleAreaBottom) {
+                // Calculate how much to scroll
+                const scrollAmount = triggerBottom - visibleAreaBottom + scrollExtraHeight;
+                console.log('AutoPositionedPopup scrollParentToTrigger: scrolling by', scrollAmount);
+
+                // Use scrollForExtraHeightOnAndroid or scrollToPosition
+                if (typeof scrollView.scrollToPosition === 'function') {
+                  // scrollToPosition(x, y, animated)
+                  scrollView.scrollToPosition(0, scrollAmount, true);
+                } else if (typeof scrollView.scrollToEnd === 'function') {
+                  // Fallback: scroll to end might help in some cases
+                  console.log('AutoPositionedPopup scrollParentToTrigger: using scrollToEnd fallback');
+                }
+              }
+            });
+          });
+        }
+      }, [parentScrollViewRef, scrollExtraHeight]);
+
+      /**
+       * Scroll parent KeyboardAwareScrollView to keep trigger visible above keyboard
+       * Uses stored trigger position (captured before TextInput replaces the trigger button)
+       */
+      const scrollToTriggerWithMeasure = useCallback(() => {
+        console.log('AutoPositionedPopup scrollToTriggerWithMeasure called, tag=', tag, {
+          hasParentScrollViewRef: !!parentScrollViewRef?.current,
+          hasTriggerPosition: !!triggerPositionRef.current,
+          triggerPosition: triggerPositionRef.current
+        });
+
+        if (!parentScrollViewRef?.current) {
+          console.log('AutoPositionedPopup scrollToTriggerWithMeasure: parentScrollViewRef not available, tag=', tag);
+          return;
+        }
+
+        // Use stored trigger position (captured when trigger was clicked)
+        const storedPosition = triggerPositionRef.current;
+        if (!storedPosition) {
+          console.log('AutoPositionedPopup scrollToTriggerWithMeasure: no stored trigger position, tag=', tag);
+          return;
+        }
+
+        const scrollView = parentScrollViewRef.current;
+        const { y: triggerY, height: triggerHeight } = storedPosition;
+
+        // Get keyboard height and screen dimensions
+        const screenHeight = Dimensions.get('window').height;
+
+        // Calculate keyboard height (approximate - keyboard typically takes 40-50% of screen on Android)
+        // We'll use the trigger position to determine if scrolling is needed
+        const keyboardApproxHeight = screenHeight * 0.4; // Conservative estimate
+        const visibleAreaBottom = screenHeight - keyboardApproxHeight;
+        const triggerBottom = triggerY + triggerHeight;
+
+        console.log('AutoPositionedPopup scrollToTriggerWithMeasure: calculations=', {
+          tag,
+          triggerY,
+          triggerHeight,
+          triggerBottom,
+          screenHeight,
+          visibleAreaBottom,
+          needsScroll: triggerBottom > visibleAreaBottom
+        });
+
+        // Check if trigger is below the visible area (covered by keyboard)
+        if (triggerBottom > visibleAreaBottom) {
+          // Calculate scroll amount to bring trigger above keyboard
+          const scrollAmount = triggerBottom - visibleAreaBottom + scrollExtraHeight;
+          console.log('AutoPositionedPopup scrollToTriggerWithMeasure: scrolling, amount=', scrollAmount, 'tag=', tag);
+
+          // Use scrollForExtraHeightOnAndroid for KeyboardAwareScrollView
+          if (typeof scrollView.scrollForExtraHeightOnAndroid === 'function') {
+            scrollView.scrollForExtraHeightOnAndroid(scrollAmount);
+          } else if (typeof scrollView.scrollToPosition === 'function') {
+            scrollView.scrollToPosition(0, scrollAmount, true);
+          } else if (scrollView.scrollTo) {
+            // Fallback to standard ScrollView method
+            scrollView.scrollTo({ y: scrollAmount, animated: true });
+          } else {
+            console.log('AutoPositionedPopup scrollToTriggerWithMeasure: no scroll method available on scrollView');
+          }
+        } else {
+          console.log('AutoPositionedPopup scrollToTriggerWithMeasure: trigger already visible, no scroll needed, tag=', tag);
+        }
+      }, [parentScrollViewRef, scrollExtraHeight, tag]);
+
       /**
        * componentDidMount && componentWillUnmount
        */
@@ -516,6 +656,17 @@ const AutoPositionedPopup = memo(
         const statusBarHeight = getStatusBarHeight();
         if (useTextInput) {
           if (isKeyboardFullyShown && hasAddedRootView.current && !hasShownRootView.current && state.isFocus) {
+            // KEYBOARD AVOIDANCE FIX: Scroll parent ScrollView to keep trigger visible
+            // When keyboard appears, the trigger button may be covered. If parentScrollViewRef
+            // is provided, scroll the parent to keep the trigger visible above the keyboard.
+            if (parentScrollViewRef?.current) {
+              console.log('AutoPositionedPopup: Keyboard appeared, scrolling parent to keep trigger visible');
+              // Use a slight delay to ensure keyboard animation has started
+              setTimeout(() => {
+                scrollToTriggerWithMeasure();
+              }, 100);
+            }
+
             // CRITICAL FIX FOR KEYBOARD POSITION CALCULATION
             // Problem: When keyboard appears, the page shifts up but measureInWindow executes too early
             // Solution: Wait for keyboard animation (300ms) + use requestAnimationFrame for next render frame
@@ -574,17 +725,18 @@ const AutoPositionedPopup = memo(
                   // So we should NOT add statusBarHeight to the position calculation
                   //
                   // 1. Default: show popup ABOVE the input field
-                  // FIX: Use (y + height) as the trigger's bottom edge reference point
-                  // This compensates for measurement inaccuracies when trigger is inside complex layouts
-                  // Formula: popup_top = trigger_bottom - componentHeight - popupHeight
-                  let popupY = y + height - listLayout.height;
+                  // Position popup so that the trigger remains VISIBLE below the popup
+                  // Use (y + height * 0.7) as reference to compensate for measurement offset
+                  // while still leaving trigger visible (30% of trigger height exposed)
+                  let popupY = y + (height * 0.7) - listLayout.height;
 
                   console.log('AutoPositionedPopup with keyboard: initial calculation for ABOVE position:', {
                     componentY: y,
                     componentHeight: height,
                     popupHeight: listLayout.height,
                     popupY,
-                    triggerBottom: y + height,
+                    popupBottom: popupY + listLayout.height,
+                    triggerTop: y,
                     statusBarHeight
                   });
 
@@ -1141,6 +1293,16 @@ const AutoPositionedPopup = memo(
                       'selectedItem': selectedItem,
                       'ref_isKeyboardFullyShown.current': ref_isKeyboardFullyShown.current
                     });
+
+                    // Capture trigger button position BEFORE switching to TextInput
+                    // This is critical because triggerBtnRef will become null after isFocus=true
+                    if (triggerBtnRef.current && parentScrollViewRef?.current) {
+                      triggerBtnRef.current.measureInWindow((x, y, width, height) => {
+                        console.log('AutoPositionedPopup onPress: captured trigger position=', {tag, x, y, width, height});
+                        triggerPositionRef.current = {x, y, width, height};
+                      });
+                    }
+
                     if (useTextInput) {
                       const _addRootView = () => {
                         if (!hasAddedRootView.current) {
