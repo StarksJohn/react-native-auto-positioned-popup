@@ -394,7 +394,7 @@ const AutoPositionedPopup = memo(
       const textInputRef = useRef<RNTextInput>(null);
       // IMPORTANT: Use a separate ref for the actual trigger button to get accurate position
       // The outer View with flex:1/height:100% may report incorrect positions in complex layouts
-      const triggerBtnRef = useRef<TouchableOpacity>(null);
+      const triggerBtnRef = useRef<React.ElementRef<typeof TouchableOpacity>>(null);
       const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
       const searchQueryRef = useRef<string>(''); // Use ref instead of state to avoid re-renders
       // Refs to store latest values for useEffect without adding to dependency array
