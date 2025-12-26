@@ -392,6 +392,9 @@ const AutoPositionedPopup = memo(
       // Refs for performance optimization
       const containerRef = useRef<View>(null);
       const textInputRef = useRef<RNTextInput>(null);
+      // IMPORTANT: Use a separate ref for the actual trigger button to get accurate position
+      // The outer View with flex:1/height:100% may report incorrect positions in complex layouts
+      const triggerBtnRef = useRef<TouchableOpacity>(null);
       const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
       const searchQueryRef = useRef<string>(''); // Use ref instead of state to avoid re-renders
       // Refs to store latest values for useEffect without adding to dependency array
@@ -527,8 +530,11 @@ const AutoPositionedPopup = memo(
             // then requestAnimationFrame ensures measurement happens after next render frame
             setTimeout(() => {
               requestAnimationFrame(() => {
-                refAutoPositionedPopup.current?.measureInWindow((x: number | undefined, y: number | undefined, width: number | undefined, height: number | undefined) => {
-                  console.log('AutoPositionedPopup useTextInput measureInWindow (after 300ms + RAF, layout stable)=', {x, y, width, height});
+                // CRITICAL FIX: Use triggerBtnRef (the actual TouchableOpacity) for measurement
+                // instead of refAutoPositionedPopup (the outer View with flex:1/height:100%)
+                const measureTarget = triggerBtnRef.current || refAutoPositionedPopup.current;
+                measureTarget?.measureInWindow((x: number | undefined, y: number | undefined, width: number | undefined, height: number | undefined) => {
+                  console.log('AutoPositionedPopup useTextInput measureInWindow (after 300ms + RAF, layout stable)=', {x, y, width, height, usingTriggerRef: !!triggerBtnRef.current});
                   // CRITICAL FIX: Handle undefined values from measureInWindow
                   // This can happen during navigation transitions or when view is not yet mounted
                   if (x === undefined || y === undefined || width === undefined || height === undefined) {
@@ -562,21 +568,46 @@ const AutoPositionedPopup = memo(
                     componentHeight: height,
                     listHeight: listLayout.height
                   });
-                  // CORRECT POSITIONING LOGIC (as per user requirement):
-                  // 1. ALWAYS try to show popup ABOVE the input field first
-                  // 2. Only if that goes off the top of screen, show BELOW instead
-                  // 3. Don't cover/overlap the input field
-                  let popupY = y - listLayout.height + statusBarHeight; // Default: above input field
-                  // Check if showing above would go off the top of screen
+                  // FIXED POSITIONING LOGIC (with keyboard):
+                  // measureInWindow returns coordinates relative to the window (screen)
+                  // The popup uses position: 'absolute' relative to RootViewProvider
+                  // So we should NOT add statusBarHeight to the position calculation
+                  //
+                  // 1. Default: show popup ABOVE the input field
+                  // FIX: Use (y + height) as the trigger's bottom edge reference point
+                  // This compensates for measurement inaccuracies when trigger is inside complex layouts
+                  // Formula: popup_top = trigger_bottom - componentHeight - popupHeight
+                  let popupY = y + height - listLayout.height;
+
+                  console.log('AutoPositionedPopup with keyboard: initial calculation for ABOVE position:', {
+                    componentY: y,
+                    componentHeight: height,
+                    popupHeight: listLayout.height,
+                    popupY,
+                    triggerBottom: y + height,
+                    statusBarHeight
+                  });
+
+                  // 2. Check if showing above would go behind status bar
                   if (popupY < statusBarHeight) {
-                    console.log('AutoPositionedPopup with keyboard: would go off screen top, showing BELOW instead');
-                    popupY = y + height + statusBarHeight; // Show below input field
-                    // Also check if showing below would go off the bottom
+                    console.log('AutoPositionedPopup with keyboard: would go behind status bar, showing BELOW instead');
+                    // Show BELOW the input field
+                    // Since y + height represents the trigger's "reference bottom" (accounting for measurement offset),
+                    // we need to add another height to position popup BELOW the actual trigger
+                    popupY = y + height + height;
+                    console.log('AutoPositionedPopup with keyboard: BELOW position calculated:', {
+                      formula: 'y + 2*height',
+                      y,
+                      height,
+                      popupY
+                    });
+
+                    // 3. Also check if showing below would go off the bottom
                     const maxY = screenHeight - listLayout.height;
                     if (popupY > maxY) {
                       // If both positions are problematic, clamp to visible area
                       console.log('AutoPositionedPopup with keyboard: both positions problematic, clamping to visible area');
-                      popupY = Math.min(Math.max(0, y - listLayout.height), maxY);
+                      popupY = Math.min(Math.max(statusBarHeight, y - listLayout.height), maxY);
                     }
                   } else {
                     console.log('AutoPositionedPopup with keyboard: showing ABOVE input field (preferred position)');
@@ -617,8 +648,12 @@ const AutoPositionedPopup = memo(
               Keyboard.dismiss();
               return;
             }
-            refAutoPositionedPopup.current?.measureInWindow((x: number | undefined, y: number | undefined, width: number | undefined, height: number | undefined) => {
-              console.log('AutoPositionedPopup !useTextInput measureInWindow=', {x, y, width, height});
+            // CRITICAL FIX: Use triggerBtnRef (the actual TouchableOpacity) for measurement
+            // instead of refAutoPositionedPopup (the outer View with flex:1/height:100%)
+            // This ensures accurate position when component is inside complex layouts like KeyboardAwareScrollView
+            const measureTarget = triggerBtnRef.current || refAutoPositionedPopup.current;
+            measureTarget?.measureInWindow((x: number | undefined, y: number | undefined, width: number | undefined, height: number | undefined) => {
+              console.log('AutoPositionedPopup !useTextInput measureInWindow=', {x, y, width, height, usingTriggerRef: !!triggerBtnRef.current});
               // CRITICAL FIX: Handle undefined values from measureInWindow
               // This can happen during navigation transitions or when view is not yet mounted
               if (x === undefined || y === undefined || width === undefined || height === undefined) {
@@ -652,24 +687,55 @@ const AutoPositionedPopup = memo(
                   statusBarHeight,
                   platform: Platform.OS
                 });
-                // CORRECT POSITIONING LOGIC (with status bar consideration):
-                // 1. Default: above input field
-                let popupY = componentY - popupHeight + statusBarHeight;
-                // 2. Check if showing above would overlap with status bar
-                // The top boundary should be statusBarHeight, not 0
+                // FIXED POSITIONING LOGIC:
+                // The popup uses position: 'absolute' relative to the RootViewProvider container
+                // measureInWindow returns coordinates relative to the window (screen)
+                // So we should NOT add statusBarHeight to the position calculation
+                //
+                // 1. Default: show popup ABOVE the trigger element
+                // FIX: Use (componentY + componentHeight) as the trigger's bottom edge reference point
+                // This compensates for measurement inaccuracies when trigger is inside complex layouts (FlatList, ScrollView)
+                // The popup's bottom should be at the trigger's top with minimal gap (≤5px)
+                // Formula: popup_top = trigger_bottom - componentHeight - popupHeight
+                //          popup_bottom = trigger_bottom - componentHeight = trigger_top
+                let popupY = componentY + componentHeight - popupHeight;
+
+                console.log('AutoPositionedPopup: initial calculation for ABOVE position:', {
+                  componentY,
+                  componentHeight,
+                  popupHeight,
+                  popupY,
+                  triggerBottom: componentY + componentHeight,
+                  statusBarHeight
+                });
+
+                // 2. Check if showing above would go off the top of screen (behind status bar)
                 if (popupY < statusBarHeight) {
-                  console.log('AutoPositionedPopup: would overlap status bar, showing BELOW instead');
-                  popupY = componentY + componentHeight + statusBarHeight; // Show below input field
-                  // 3. Also check if showing below would go off the bottom
+                  console.log('AutoPositionedPopup: would go behind status bar, showing BELOW instead');
+                  // Show BELOW the trigger element
+                  // Since componentY + componentHeight represents the trigger's "reference bottom" (accounting for measurement offset),
+                  // we need to add another componentHeight to position popup BELOW the actual trigger
+                  // Formula: popup top = componentY + (2 * componentHeight)
+                  //   - (componentY + componentHeight) = trigger's actual top (compensated)
+                  //   - + componentHeight = skip past trigger height to get to trigger's actual bottom
+                  popupY = componentY + componentHeight + componentHeight;
+                  console.log('AutoPositionedPopup: BELOW position calculated:', {
+                    formula: 'componentY + 2*componentHeight',
+                    componentY,
+                    componentHeight,
+                    popupY
+                  });
+
+                  // 3. Also check if showing below would go off the bottom of screen
                   const maxY = screenHeight - popupHeight;
                   if (popupY > maxY) {
                     // If both positions are problematic, clamp to visible area
-                    // But ensure it doesn't go above status bar
+                    // Prioritize showing as close to trigger as possible
                     console.log('AutoPositionedPopup: both positions problematic, clamping to visible area');
                     popupY = Math.min(Math.max(statusBarHeight, componentY - popupHeight), maxY);
                   }
                 } else {
-                  console.log('AutoPositionedPopup: showing ABOVE input field (preferred position, below status bar)');
+                  console.log('AutoPositionedPopup: showing ABOVE input field (preferred position)');
                 }
                 console.log('AutoPositionedPopup final position:', {
                   popupY,
@@ -1061,6 +1127,7 @@ const AutoPositionedPopup = memo(
             <View style={[styles.contain, style]} ref={refAutoPositionedPopup}>
               {!state.isFocus || !useTextInput ? (
                 <TouchableOpacity
+                  ref={triggerBtnRef}
                   style={[styles.AutoPositionedPopupBtn, AutoPositionedPopupBtnStyle]}
                   disabled={AutoPositionedPopupBtnDisabled}
                   onPress={() => {
