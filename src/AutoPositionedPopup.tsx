@@ -534,9 +534,9 @@ const AutoPositionedPopup = memo(
             scrollView.scrollForExtraHeightOnAndroid(scrollAmount);
           } else if (typeof scrollView.scrollToPosition === 'function') {
             scrollView.scrollToPosition(0, scrollAmount, true);
-          } else if (scrollView.scrollTo) {
+          } else if ('scrollTo' in scrollView && typeof (scrollView as any).scrollTo === 'function') {
             // Fallback to standard ScrollView method
-            scrollView.scrollTo({ y: scrollAmount, animated: true });
+            (scrollView as any).scrollTo({ y: scrollAmount, animated: true });
           } else {
             console.log('AutoPositionedPopup scrollToTriggerWithMeasure: no scroll method available on scrollView');
           }
