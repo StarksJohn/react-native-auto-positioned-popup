@@ -1,3 +1,15 @@
+// Module load marker - unique ID for tracking code version
+// DEBUG FLAG: Set to false to disable all console logs for better performance
+const POPUP_DEBUG = false;
+const debugLog = (...args: any[]) => {
+  if (POPUP_DEBUG) {
+    console.log(...args);
+  }
+};
+
+// Only log module load in debug mode
+debugLog('POPUP_MODULE_V17_LOADED at ' + new Date().toISOString());
+
 import React, {
   ForwardedRef,
   forwardRef,
@@ -35,7 +47,7 @@ import {useKeyboardStatus} from './KeyboardManager';
 type QueryListener = (query: string) => void;
 const queryChangeListeners: QueryListener[] = [];
 const emitQueryChange = (query: string) => {
-  console.log('AutoPositionedPopup.tsx emitQueryChange query=', query, ' listeners=', queryChangeListeners.length);
+  debugLog('AutoPositionedPopup.tsx emitQueryChange query=', query, ' listeners=', queryChangeListeners.length);
   queryChangeListeners.forEach((l) => l(query));
 };
 const subscribeQueryChange = (listener: QueryListener) => {
@@ -92,7 +104,7 @@ const ListItem: React.FC<{
       rootViewsRef.current = rootViews;
     }, [rootViews]);
     return useMemo(() => {
-      // console.log('AutoPositionedPopup.tsx ListItem=', {index, item, selectedItem});
+      // debugLog('AutoPositionedPopup.tsx ListItem=', {index, item, selectedItem});
       const isSelected = item.id === selectedItem?.id || item.title == selectedItem?.title;
       return (
         <TouchableOpacity
@@ -102,8 +114,8 @@ const ListItem: React.FC<{
             {backgroundColor: isSelected ? (themeMode === 'light' ? 'rgba(116, 116, 128, 0.08)' : 'rgba(120, 120, 128, 0.36)') : 'transparent'},
           ]}
           onPress={() => {
-            // console.log('AutoPositionedPopup.tsx ListItem onPress item=', item); // Commented to prevent spam
-            // console.log('AutoPositionedPopup.tsx ListItem onPress rootViews=', rootViewsRef.current); // Commented to prevent spam
+            // debugLog('AutoPositionedPopup.tsx ListItem onPress item=', item); // Commented to prevent spam
+            // debugLog('AutoPositionedPopup.tsx ListItem onPress rootViews=', rootViewsRef.current); // Commented to prevent spam
             updateState('selectedItem', item);
           }}
         >
@@ -171,16 +183,16 @@ const AutoPositionedPopupList: React.FC<AutoPositionedPopupListProps> = memo(
     useEffect(() => {
       (async () => {
       })();
-      console.log(`AutoPositionedPopupList componentDidMount`);
+      debugLog(`AutoPositionedPopupList componentDidMount`);
       //componentWillUnmount
       return () => {
-        console.log(`AutoPositionedPopupList componentWillUnmount`);
+        debugLog(`AutoPositionedPopupList componentWillUnmount`);
         setSearchQuery('');
       };
     }, []);
     useEffect(() => {
       const unsubscribe = subscribeQueryChange((newQuery: string) => {
-        console.log('AutoPositionedPopupList useEffect subscribeQueryChange newQuery=', newQuery);
+        debugLog('AutoPositionedPopupList useEffect subscribeQueryChange newQuery=', newQuery);
         ref_searchQuery.current = newQuery;
         if (ref_list.current) {
           ref_list.current.scrollToTop();
@@ -190,24 +202,24 @@ const AutoPositionedPopupList: React.FC<AutoPositionedPopupListProps> = memo(
       return unsubscribe;
     }, []);
     const _updateState = (key: string, value: SelectedItem) => {
-      console.log('AutoPositionedPopupList _updateState key=', key, ' value=', value);
+      debugLog('AutoPositionedPopupList _updateState key=', key, ' value=', value);
       setState((prevState) => ({
         ...prevState,
         [key]: value,
       }));
-      console.log('AutoPositionedPopupList _updateState rootViews=', rootViewsRef.current);
+      debugLog('AutoPositionedPopupList _updateState rootViews=', rootViewsRef.current);
       updateState(key, value);
     };
     const _fetchData = async ({
                                 pageIndex,
                                 pageSize: currentPageSize,
                               }: FetchDataParams): Promise<ListData | null> => {
-      console.log('AutoPositionedPopupList _fetchData=', {pageIndex, pageSize: currentPageSize, 'state.localData': state.localData, 'ref_searchQuery.current': ref_searchQuery.current, localSearch});
+      debugLog('AutoPositionedPopupList _fetchData=', {pageIndex, pageSize: currentPageSize, 'state.localData': state.localData, 'ref_searchQuery.current': ref_searchQuery.current, localSearch});
       if (localSearch && state.localData.length > 0) {
         const result: SelectedItem[] = state.localData.filter((item: SelectedItem) => {
           return `${item.title}`?.toLowerCase().includes(ref_searchQuery.current.toLowerCase());
         });
-        console.log('AutoPositionedPopupList _fetchData localSearch result=', result);
+        debugLog('AutoPositionedPopupList _fetchData localSearch result=', result);
         return Promise.resolve({
           items: result,
           pageIndex: 0,
@@ -220,7 +232,7 @@ const AutoPositionedPopupList: React.FC<AutoPositionedPopupListProps> = memo(
           pageSize: pageSize || 10,
           searchQuery: ref_searchQuery.current,
         });
-        console.log('AutoPositionedPopupList _fetchData res=', res);
+        debugLog('AutoPositionedPopupList _fetchData res=', res);
         if (res?.items && localSearch) {
           setState((prevState) => {
             return {
@@ -239,9 +251,9 @@ const AutoPositionedPopupList: React.FC<AutoPositionedPopupListProps> = memo(
         }
         return null;
       } catch (e) {
-        console.warn('Error in fetchData:', e);
+        debugLog('Error in fetchData:', e);
       }
-      console.log('AutoPositionedPopupList _fetchData res=', null);
+      debugLog('AutoPositionedPopupList _fetchData res=', null);
       return null;
     };
     const _renderItem = useCallback(
@@ -251,7 +263,7 @@ const AutoPositionedPopupList: React.FC<AutoPositionedPopupListProps> = memo(
       [state.selectedItem, themeMode]
     );
     return useMemo(() => {
-      console.log('AutoPositionedPopupList (global as any)?.$fake=', (global as any)?.$fake);
+      debugLog('AutoPositionedPopupList (global as any)?.$fake=', (global as any)?.$fake);
       // Babel configuration handles the path redirection based on global.$fake
       // No need for conditional import here
       return (
@@ -298,7 +310,7 @@ const listLayout = {
 const AutoPositionedPopup = memo(
   forwardRef<unknown, AutoPositionedPopupProps>(
     (props: AutoPositionedPopupProps, parentRef: ForwardedRef<unknown>): React.JSX.Element => {
-      console.log('AutoPositionedPopup props=', props);
+      debugLog('AutoPositionedPopup props=', props);
       const {
         tag,
         style,
@@ -325,11 +337,11 @@ const AutoPositionedPopup = memo(
           };
           try {
             // const res1: any[] = await $api.xxx(pageSize)
-            // console.log('${NAME} xxx res=', res)
+            // debugLog('${NAME} xxx res=', res)
             // res.items = res1
             // res.needLoadMore = res1.length === pageSize
           } catch (e) {
-            console.warn('Error in fetch operation:', e);
+            debugLog('Error in fetch operation:', e);
           }
           return res;
         },
@@ -356,7 +368,7 @@ const AutoPositionedPopup = memo(
         selectedItem: selectedItem,
       });
       // Use RootView context
-      const {addRootView, setRootViewNativeStyle, removeRootView, rootViews, setSearchQuery} = useRootView();
+      const {addRootView, setRootViewNativeStyle, updateRootView, removeRootView, rootViews, setSearchQuery} = useRootView();
       const rootViewsRef = useRef(rootViews);
       // Track TextInput focus and RootView states like project implementation
       const hasTriggeredFocus = useRef(false);
@@ -418,7 +430,7 @@ const AutoPositionedPopup = memo(
        */
       const scrollParentToTrigger = useCallback(() => {
         if (!parentScrollViewRef?.current || !triggerBtnRef.current) {
-          console.log('AutoPositionedPopup scrollParentToTrigger: No parentScrollViewRef or triggerBtnRef available');
+          debugLog('AutoPositionedPopup scrollParentToTrigger: No parentScrollViewRef or triggerBtnRef available');
           return;
         }
 
@@ -428,18 +440,18 @@ const AutoPositionedPopup = memo(
         const nodeHandle = findNodeHandle(triggerBtnRef.current);
 
         if (nodeHandle && scrollView) {
-          console.log('AutoPositionedPopup scrollParentToTrigger: Scrolling to trigger button with extraHeight=', scrollExtraHeight);
+          debugLog('AutoPositionedPopup scrollParentToTrigger: Scrolling to trigger button with extraHeight=', scrollExtraHeight);
 
           // KeyboardAwareScrollView has a scrollToFocusedInput method that handles this
           // However, it requires a ReactNode. We'll use scrollToPosition as an alternative.
           // First, measure the trigger button position relative to the ScrollView
           triggerBtnRef.current.measureInWindow((x, y, width, height) => {
             if (y === undefined || height === undefined) {
-              console.log('AutoPositionedPopup scrollParentToTrigger: measureInWindow returned undefined');
+              debugLog('AutoPositionedPopup scrollParentToTrigger: measureInWindow returned undefined');
               return;
             }
 
-            console.log('AutoPositionedPopup scrollParentToTrigger: trigger position=', { x, y, width, height });
+            debugLog('AutoPositionedPopup scrollParentToTrigger: trigger position=', { x, y, width, height });
 
             // Get keyboard height from Keyboard API
             // On keyboard show, scroll to position that keeps trigger above keyboard
@@ -451,7 +463,7 @@ const AutoPositionedPopup = memo(
               const triggerBottom = y + height;
               const visibleAreaBottom = screenHeight - keyboardHeight;
 
-              console.log('AutoPositionedPopup scrollParentToTrigger: keyboard data=', {
+              debugLog('AutoPositionedPopup scrollParentToTrigger: keyboard data=', {
                 keyboardHeight,
                 screenHeight,
                 triggerBottom,
@@ -462,7 +474,7 @@ const AutoPositionedPopup = memo(
               if (triggerBottom > visibleAreaBottom) {
                 // Calculate how much to scroll
                 const scrollAmount = triggerBottom - visibleAreaBottom + scrollExtraHeight;
-                console.log('AutoPositionedPopup scrollParentToTrigger: scrolling by', scrollAmount);
+                debugLog('AutoPositionedPopup scrollParentToTrigger: scrolling by', scrollAmount);
 
                 // Use scrollForExtraHeightOnAndroid or scrollToPosition
                 if (typeof scrollView.scrollToPosition === 'function') {
@@ -470,7 +482,7 @@ const AutoPositionedPopup = memo(
                   scrollView.scrollToPosition(0, scrollAmount, true);
                 } else if (typeof scrollView.scrollToEnd === 'function') {
                   // Fallback: scroll to end might help in some cases
-                  console.log('AutoPositionedPopup scrollParentToTrigger: using scrollToEnd fallback');
+                  debugLog('AutoPositionedPopup scrollParentToTrigger: using scrollToEnd fallback');
                 }
               }
             });
@@ -483,21 +495,21 @@ const AutoPositionedPopup = memo(
        * Uses stored trigger position (captured before TextInput replaces the trigger button)
        */
       const scrollToTriggerWithMeasure = useCallback(() => {
-        console.log('AutoPositionedPopup scrollToTriggerWithMeasure called, tag=', tag, {
+        debugLog('AutoPositionedPopup scrollToTriggerWithMeasure called, tag=', tag, {
           hasParentScrollViewRef: !!parentScrollViewRef?.current,
           hasTriggerPosition: !!triggerPositionRef.current,
           triggerPosition: triggerPositionRef.current
         });
 
         if (!parentScrollViewRef?.current) {
-          console.log('AutoPositionedPopup scrollToTriggerWithMeasure: parentScrollViewRef not available, tag=', tag);
+          debugLog('AutoPositionedPopup scrollToTriggerWithMeasure: parentScrollViewRef not available, tag=', tag);
           return;
         }
 
         // Use stored trigger position (captured when trigger was clicked)
         const storedPosition = triggerPositionRef.current;
         if (!storedPosition) {
-          console.log('AutoPositionedPopup scrollToTriggerWithMeasure: no stored trigger position, tag=', tag);
+          debugLog('AutoPositionedPopup scrollToTriggerWithMeasure: no stored trigger position, tag=', tag);
           return;
         }
 
@@ -513,7 +525,7 @@ const AutoPositionedPopup = memo(
         const visibleAreaBottom = screenHeight - keyboardApproxHeight;
         const triggerBottom = triggerY + triggerHeight;
 
-        console.log('AutoPositionedPopup scrollToTriggerWithMeasure: calculations=', {
+        debugLog('AutoPositionedPopup scrollToTriggerWithMeasure: calculations=', {
           tag,
           triggerY,
           triggerHeight,
@@ -527,7 +539,7 @@ const AutoPositionedPopup = memo(
         if (triggerBottom > visibleAreaBottom) {
           // Calculate scroll amount to bring trigger above keyboard
           const scrollAmount = triggerBottom - visibleAreaBottom + scrollExtraHeight;
-          console.log('AutoPositionedPopup scrollToTriggerWithMeasure: scrolling, amount=', scrollAmount, 'tag=', tag);
+          debugLog('AutoPositionedPopup scrollToTriggerWithMeasure: scrolling, amount=', scrollAmount, 'tag=', tag);
 
           // Use scrollForExtraHeightOnAndroid for KeyboardAwareScrollView
           if (typeof scrollView.scrollForExtraHeightOnAndroid === 'function') {
@@ -538,10 +550,10 @@ const AutoPositionedPopup = memo(
             // Fallback to standard ScrollView method
             (scrollView as any).scrollTo({ y: scrollAmount, animated: true });
           } else {
-            console.log('AutoPositionedPopup scrollToTriggerWithMeasure: no scroll method available on scrollView');
+            debugLog('AutoPositionedPopup scrollToTriggerWithMeasure: no scroll method available on scrollView');
           }
         } else {
-          console.log('AutoPositionedPopup scrollToTriggerWithMeasure: trigger already visible, no scroll needed, tag=', tag);
+          debugLog('AutoPositionedPopup scrollToTriggerWithMeasure: trigger already visible, no scroll needed, tag=', tag);
         }
       }, [parentScrollViewRef, scrollExtraHeight, tag]);
 
@@ -551,10 +563,10 @@ const AutoPositionedPopup = memo(
       useEffect(() => {
         (async () => {
         })();
-        console.log(`AutoPositionedPopup componentDidMount=`, {tag, CustomPopView});
+        debugLog(`AutoPositionedPopup componentDidMount=`, {tag, CustomPopView});
         //componentWillUnmount
         return () => {
-          console.log(`AutoPositionedPopup componentWillUnmount tag=`, tag);
+          debugLog(`AutoPositionedPopup componentWillUnmount tag=`, tag);
           removeRootView(tag, forceRemoveAllRootViewOnItemSelected, rootViewsRef.current);
           setSearchQuery('');
           if (textInputRef.current) {
@@ -567,7 +579,7 @@ const AutoPositionedPopup = memo(
         };
       }, []);
       useEffect(() => {
-        console.log('AutoPositionedPopup rootViews=', {tag, rootViews});
+        debugLog('AutoPositionedPopup rootViews=', {tag, rootViews});
         rootViewsRef.current = rootViews;
         if (rootViews.length === 0) {
           hasAddedRootView.current = false;
@@ -584,10 +596,10 @@ const AutoPositionedPopup = memo(
         }
       }, [rootViews]);
       useEffect(() => {
-        console.log('AutoPositionedPopup useEffect [selectedItem, state.selectedItem, tag]=', {tag, selectedItem, 'state.selectedItem': state.selectedItem});
-        console.log('AutoPositionedPopup useEffect state.selectedItem=', state.selectedItem);
+        debugLog('AutoPositionedPopup useEffect [selectedItem, state.selectedItem, tag]=', {tag, selectedItem, 'state.selectedItem': state.selectedItem});
+        debugLog('AutoPositionedPopup useEffect state.selectedItem=', state.selectedItem);
         if (state.selectedItem?.id !== selectedItem?.id || state.selectedItem?.title != selectedItem?.title) {
-          console.log('AutoPositionedPopup useEffect selectedItem!=state.selectedItem');
+          debugLog('AutoPositionedPopup useEffect selectedItem!=state.selectedItem');
           setState((prevState) => {
             return {
               ...prevState,
@@ -603,7 +615,7 @@ const AutoPositionedPopup = memo(
           prevPropsRef.current.CustomPopView !== CustomPopView ||
           prevPropsRef.current.CustomPopViewStyle !== CustomPopViewStyle ||
           (prevPropsRef.current.TextInputProps !== TextInputProps && useTextInput);
-        console.log('AutoPositionedPopup useEffect [isKeyboardFullyShown,\n' +
+        debugLog('AutoPositionedPopup useEffect [isKeyboardFullyShown,\n' +
           '        state.isFocus,\n' +
           '        useTextInput,\n' +
           '        CustomPopView,\n' +
@@ -634,12 +646,18 @@ const AutoPositionedPopup = memo(
           TextInputProps
         };
         // Only execute logic when keyboard state actually changes or user actively operates
-        if (!keyboardStateChanged && hasAddedRootView.current) {
-          console.log('AutoPositionedPopup: Skip execution - parent component re-rendered but keyboard state unchanged textInputRef.current=', textInputRef.current);
-          // if (!ref_isFocus.current) {
-          //   textInputRef.current?.focus()
-          // }
+        // CRITICAL FIX: Also allow execution when popup needs initial positioning
+        // hasAddedRootView.current = true means popup container exists
+        // hasShownRootView.current = false means positioning not done yet
+        // We MUST allow execution when popup needs positioning, even if keyboard state unchanged
+        if (!keyboardStateChanged && hasAddedRootView.current && hasShownRootView.current) {
+          debugLog('AutoPositionedPopup: Skip execution - already positioned and keyboard state unchanged');
           return;
+        }
+
+        // Log when we're allowing execution for initial positioning
+        if (!keyboardStateChanged && hasAddedRootView.current && !hasShownRootView.current) {
+          debugLog('AutoPositionedPopup: ALLOWING execution for initial positioning (popup added but not positioned yet)');
         }
         const getStatusBarHeight = (): number => {
           if (Platform.OS === 'android') {
@@ -660,7 +678,7 @@ const AutoPositionedPopup = memo(
             // When keyboard appears, the trigger button may be covered. If parentScrollViewRef
             // is provided, scroll the parent to keep the trigger visible above the keyboard.
             if (parentScrollViewRef?.current) {
-              console.log('AutoPositionedPopup: Keyboard appeared, scrolling parent to keep trigger visible');
+              debugLog('AutoPositionedPopup: Keyboard appeared, scrolling parent to keep trigger visible');
               // Use a slight delay to ensure keyboard animation has started
               setTimeout(() => {
                 scrollToTriggerWithMeasure();
@@ -681,105 +699,164 @@ const AutoPositionedPopup = memo(
             // then requestAnimationFrame ensures measurement happens after next render frame
             setTimeout(() => {
               requestAnimationFrame(() => {
-                // CRITICAL FIX: Use triggerBtnRef (the actual TouchableOpacity) for measurement
-                // instead of refAutoPositionedPopup (the outer View with flex:1/height:100%)
-                const measureTarget = triggerBtnRef.current || refAutoPositionedPopup.current;
-                measureTarget?.measureInWindow((x: number | undefined, y: number | undefined, width: number | undefined, height: number | undefined) => {
-                  console.log('AutoPositionedPopup useTextInput measureInWindow (after 300ms + RAF, layout stable)=', {x, y, width, height, usingTriggerRef: !!triggerBtnRef.current});
-                  // CRITICAL FIX: Handle undefined values from measureInWindow
-                  // This can happen during navigation transitions or when view is not yet mounted
+                // CRITICAL FIX: Measure CURRENT position AFTER keyboard animation completes
+                // DO NOT use stored triggerPositionRef because keyboard may have shifted the view up
+                // Instead, measure the outer wrapper (refAutoPositionedPopup)
+                // which reflects the ACTUAL current position after keyboard shift
+
+                // DEBUG: Log both refs to compare their positions
+                debugLog('AutoPositionedPopup DEBUG: refs status=', {
+                  hasTextInputRef: !!textInputRef.current,
+                  hasRefAutoPositionedPopup: !!refAutoPositionedPopup.current,
+                });
+
+                // Measure BOTH refs for comparison
+                if (textInputRef.current && refAutoPositionedPopup.current) {
+                  textInputRef.current.measureInWindow((tx: number | undefined, ty: number | undefined, tw: number | undefined, th: number | undefined) => {
+                    debugLog('AutoPositionedPopup DEBUG: textInputRef position=', {x: tx, y: ty, width: tw, height: th});
+                  });
+                  refAutoPositionedPopup.current.measureInWindow((rx: number | undefined, ry: number | undefined, rw: number | undefined, rh: number | undefined) => {
+                    debugLog('AutoPositionedPopup DEBUG: refAutoPositionedPopup position=', {x: rx, y: ry, width: rw, height: rh});
+                  });
+                }
+
+                // CRITICAL FIX: Use textInputRef as primary measurement target
+                // refAutoPositionedPopup.measureInWindow() returns undefined values
+                // because the outer wrapper View uses flex:1/height:100% which makes it unmeasurable
+                // textInputRef reliably returns the actual position of the input field
+                const measureTarget = textInputRef.current || refAutoPositionedPopup.current;
+
+                if (!measureTarget) {
+                  debugLog('AutoPositionedPopup useTextInput: no measureTarget available, using fallback');
+                  const screenHeightFallback = Dimensions.get('window').height;
+                  const screenWidthFallback = Dimensions.get('window').width;
+                  const fallbackY = (screenHeightFallback - listLayout.height) / 2;
+                  ref_listPos.current = {x: screenWidthFallback * 0.05, y: fallbackY, width: screenWidthFallback * 0.9};
+                  updateRootView(tag, {
+                    style: {
+                      top: ref_listPos.current?.y,
+                      left: popUpViewStyle?.left,
+                      width: popUpViewStyle?.width,
+                      height: listLayout.height,
+                      opacity: 1,
+                    }
+                  });
+                  hasShownRootView.current = true;
+                  return;
+                }
+
+                // Determine which ref is actually being used (for logging)
+                const usingTextInputRef = measureTarget === textInputRef.current;
+                debugLog('AutoPositionedPopup useTextInput: using measureTarget=', usingTextInputRef ? 'textInputRef' : 'refAutoPositionedPopup');
+
+                // Measure CURRENT position (after keyboard shifted the view)
+                measureTarget.measureInWindow((x: number | undefined, y: number | undefined, width: number | undefined, height: number | undefined) => {
+                  debugLog('AutoPositionedPopup useTextInput: measured position for positioning=', {
+                    x, y, width, height,
+                    measureTarget: usingTextInputRef ? 'textInputRef' : 'refAutoPositionedPopup'
+                  });
+
+                  // Handle undefined values (can happen during navigation transitions)
                   if (x === undefined || y === undefined || width === undefined || height === undefined) {
-                    console.warn('AutoPositionedPopup useTextInput: measureInWindow returned undefined values, using fallback position');
+                    debugLog('AutoPositionedPopup useTextInput: measureInWindow returned undefined, using fallback');
                     const screenHeightFallback = Dimensions.get('window').height;
                     const screenWidthFallback = Dimensions.get('window').width;
                     const fallbackY = (screenHeightFallback - listLayout.height) / 2;
-                    const fallbackX = screenWidthFallback * 0.05;
-                    const fallbackWidth = screenWidthFallback * 0.9;
-                    x = fallbackX;
+                    x = screenWidthFallback * 0.05;
                     y = fallbackY;
-                    width = fallbackWidth;
+                    width = screenWidthFallback * 0.9;
                     height = 50;
                   }
-                  // CRITICAL FIX: Coordinate system mismatch issue
-                  // Problem: measureInWindow returns coordinates relative to window (fixed reference),
-                  // but popup uses absolute positioning relative to App container (which shifts when keyboard appears)
-                  //
-                  // When keyboard appears:
-                  // 1. measureInWindow returns y relative to window (e.g., y=400 after shifting)
-                  // 2. But popup's absolute positioning is relative to App container
-                  // 3. If App container shifted up by 200px, setting top=200 will display at window.y=0 (wrong!)
-                  //
-                  // Solution: Since popup is rendered at root level and uses absolute positioning,
-                  // we should directly use measureInWindow's y value without additional calculations
-                  // The popup container is at the same level as the page content
-                  const screenHeight = Dimensions.get('window').height; // Use window height, not screen
-                  console.log('AutoPositionedPopup useTextInput positioning data=', {
+
+                  // Calculate screen height and popup position
+                  const screenHeight = Dimensions.get('window').height;
+                  debugLog('AutoPositionedPopup useTextInput positioning data=', {
                     screenHeight,
                     componentY: y,
                     componentHeight: height,
                     listHeight: listLayout.height
                   });
-                  // FIXED POSITIONING LOGIC (with keyboard):
-                  // measureInWindow returns coordinates relative to the window (screen)
-                  // The popup uses position: 'absolute' relative to RootViewProvider
-                  // So we should NOT add statusBarHeight to the position calculation
-                  //
-                  // 1. Default: show popup ABOVE the input field
-                  // Position popup so that the trigger remains VISIBLE below the popup
-                  // Use (y + height * 0.7) as reference to compensate for measurement offset
-                  // while still leaving trigger visible (30% of trigger height exposed)
-                  let popupY = y + (height * 0.7) - listLayout.height;
 
-                  console.log('AutoPositionedPopup with keyboard: initial calculation for ABOVE position:', {
-                    componentY: y,
-                    componentHeight: height,
+                  // POSITIONING LOGIC (with keyboard):
+                  // Simple rule: popup must TOUCH the trigger with NO GAP
+                  // 1. Default: show ABOVE trigger (popup bottom touches trigger top)
+                  // 2. If ABOVE would overlap status bar: show BELOW (popup top touches trigger bottom)
+
+                  debugLog('AutoPositionedPopup POSITIONING:', {
+                    triggerY: y,
+                    triggerHeight: height,
+                    triggerBottom: y + height,
                     popupHeight: listLayout.height,
-                    popupY,
-                    popupBottom: popupY + listLayout.height,
-                    triggerTop: y,
+                    screenHeight,
                     statusBarHeight
                   });
 
-                  // 2. Check if showing above would go behind status bar
+                  // 1. Default: show popup ABOVE the trigger
+                  // Popup has internal padding (12px from autoPositionedPopupList style)
+                  // To make popup CONTENT touch trigger (not container), add padding offset
+                  // Container bottom at y + POPUP_PADDING, content bottom at y (no gap)
+                  const POPUP_PADDING = 12;
+                  let popupY = y - listLayout.height + POPUP_PADDING;
+                  let position = 'ABOVE';
+
+                  debugLog('AutoPositionedPopup: trying ABOVE position:', {
+                    popupY,
+                    popupBottom: popupY + listLayout.height,
+                    contentBottom: popupY + listLayout.height - POPUP_PADDING,
+                    triggerTop: y,
+                    paddingOffset: POPUP_PADDING,
+                    wouldOverlapStatusBar: popupY < statusBarHeight
+                  });
+
+                  // 2. If showing ABOVE would go behind status bar, show BELOW instead
                   if (popupY < statusBarHeight) {
-                    console.log('AutoPositionedPopup with keyboard: would go behind status bar, showing BELOW instead');
-                    // Show BELOW the input field
-                    // Since y + height represents the trigger's "reference bottom" (accounting for measurement offset),
-                    // we need to add another height to position popup BELOW the actual trigger
-                    popupY = y + height + height;
-                    console.log('AutoPositionedPopup with keyboard: BELOW position calculated:', {
-                      formula: 'y + 2*height',
-                      y,
-                      height,
-                      popupY
+                    // Show BELOW: popup top at trigger bottom
+                    // Use trigger's measured height as buffer to account for row padding
+                    // The TextInput is only part of the trigger row - row height scales with trigger height
+                    const BELOW_BUFFER = height;
+                    popupY = y + height + BELOW_BUFFER;
+                    position = 'BELOW';
+
+                    debugLog('AutoPositionedPopup: using BELOW position (ABOVE overlaps status bar):', {
+                      popupY,
+                      triggerBottom: y + height,
+                      buffer: BELOW_BUFFER,
+                      actualGap: BELOW_BUFFER
                     });
 
-                    // 3. Also check if showing below would go off the bottom
+                    // 3. Safety check: if BELOW would go off screen bottom, clamp it
                     const maxY = screenHeight - listLayout.height;
                     if (popupY > maxY) {
-                      // If both positions are problematic, clamp to visible area
-                      console.log('AutoPositionedPopup with keyboard: both positions problematic, clamping to visible area');
-                      popupY = Math.min(Math.max(statusBarHeight, y - listLayout.height), maxY);
+                      popupY = maxY;
+                      debugLog('AutoPositionedPopup: clamped to screen bottom:', { popupY, maxY });
                     }
                   } else {
-                    console.log('AutoPositionedPopup with keyboard: showing ABOVE input field (preferred position)');
+                    debugLog('AutoPositionedPopup: using ABOVE position (preferred)');
                   }
+
+                  debugLog('AutoPositionedPopup FINAL POSITION:', { position, popupY, touchesTrigger: true });
+
                   ref_listPos.current = {x: x, y: popupY, width: width};
-                  console.log('AutoPositionedPopup useTextInput final position=', ref_listPos.current);
-                  setRootViewNativeStyle(tag, {
+                  debugLog('AutoPositionedPopup useTextInput final position=', ref_listPos.current);
+
+                  // Use updateRootView instead of setRootViewNativeStyle for more reliable style updates
+                  // setNativeProps may not work correctly when initial style is in an array
+                  const newStyle = {
                     top: ref_listPos.current?.y,
                     left: popUpViewStyle?.left,
                     width: popUpViewStyle?.width,
                     height: listLayout.height,
                     opacity: 1,
-                  });
+                  };
+                  debugLog('AutoPositionedPopup useTextInput: applying new style via updateRootView=', newStyle);
+                  updateRootView(tag, {style: newStyle});
                   hasShownRootView.current = true;
                 });
               });
             }, 300) // 300ms is sufficient for keyboard animation, as proven by user testing (even 3000ms didn't fix wrong logic)
           } else if (!isKeyboardFullyShown && ref_isFocus.current && keyboardStateChanged) {
             // Only execute close logic when keyboard state actually changes from true to false
-            console.log(
+            debugLog(
               'AutoPositionedPopup isKeyboardFullyShown useEffect removeRootView (keyboard state changed)=',
               {tag, forceRemoveAllRootViewOnItemSelected, keyboardStateChanged}
             );
@@ -795,217 +872,84 @@ const AutoPositionedPopup = memo(
             hasShownRootView.current = false;
           }
         } else {
+          // V17 SIMPLIFICATION: When useTextInput=false, ALWAYS show popup in CENTER of screen
+          // User request: "只要传入的 useTextInput 是 false, 弹框都显示在屏幕中间"
+          // This avoids all complex positioning calculations that kept failing
           if (state.isFocus) {
             if (isKeyboardFullyShown) {
               Keyboard.dismiss();
               return;
             }
-            // CRITICAL FIX: Use triggerBtnRef (the actual TouchableOpacity) for measurement
-            // instead of refAutoPositionedPopup (the outer View with flex:1/height:100%)
-            // This ensures accurate position when component is inside complex layouts like KeyboardAwareScrollView
-            const measureTarget = triggerBtnRef.current || refAutoPositionedPopup.current;
-            measureTarget?.measureInWindow((x: number | undefined, y: number | undefined, width: number | undefined, height: number | undefined) => {
-              console.log('AutoPositionedPopup !useTextInput measureInWindow=', {x, y, width, height, usingTriggerRef: !!triggerBtnRef.current});
-              // CRITICAL FIX: Handle undefined values from measureInWindow
-              // This can happen during navigation transitions or when view is not yet mounted
-              if (x === undefined || y === undefined || width === undefined || height === undefined) {
-                console.warn('AutoPositionedPopup: measureInWindow returned undefined values, using fallback position');
-                // Use screen center as fallback position
-                const screenHeight = Dimensions.get('window').height;
-                const screenWidth = Dimensions.get('window').width;
-                const fallbackY = (screenHeight - listLayout.height) / 2;
-                const fallbackX = screenWidth * 0.05; // 5% from left
-                const fallbackWidth = screenWidth * 0.9; // 90% width
-                ref_listPos.current = { x: fallbackX, y: fallbackY, width: fallbackWidth };
-                console.log('AutoPositionedPopup !useTextInput using fallback position=', ref_listPos.current);
-                // Proceed with fallback values
-                x = fallbackX;
-                y = fallbackY;
-                width = fallbackWidth;
-                height = 50; // Default height for the trigger element
-              }
-              // CORRECT POSITIONING LOGIC (as per user requirement)
-              // Default: show popup ABOVE the input field
-              // Only if that goes off the top of screen (considering status bar), show BELOW instead
-              const calculateOptimalPosition = (componentY: number, componentHeight: number, popupHeight: number) => {
-                console.log('AutoPositionedPopup calculateOptimalPosition executing');
-                // Use window height (visible area) instead of screen height
-                const screenHeight = Dimensions.get('window').height;
-                console.log('AutoPositionedPopup positioning data:', {
-                  screenHeight,
-                  componentY,
-                  componentHeight,
-                  popupHeight,
-                  statusBarHeight,
-                  platform: Platform.OS
-                });
-                // FIXED POSITIONING LOGIC:
-                // The popup uses position: 'absolute' relative to the RootViewProvider container
-                // measureInWindow returns coordinates relative to the window (screen)
-                // So we should NOT add statusBarHeight to the position calculation
-                //
-                // 1. Default: show popup ABOVE the trigger element
-                // FIX: Use (componentY + componentHeight) as the trigger's bottom edge reference point
-                // This compensates for measurement inaccuracies when trigger is inside complex layouts (FlatList, ScrollView)
-                // The popup's bottom should be at the trigger's top with minimal gap (≤5px)
-                // Formula: popup_top = trigger_bottom - componentHeight - popupHeight
-                //          popup_bottom = trigger_bottom - componentHeight = trigger_top
-                let popupY = componentY + componentHeight - popupHeight;
 
-                console.log('AutoPositionedPopup: initial calculation for ABOVE position:', {
-                  componentY,
-                  componentHeight,
-                  popupHeight,
-                  popupY,
-                  triggerBottom: componentY + componentHeight,
-                  statusBarHeight
-                });
+            debugLog('🟢🟢🟢 POPUP_V17 useTextInput=false, showing popup in CENTER of screen');
 
-                // 2. Check if showing above would go off the top of screen (behind status bar)
-                if (popupY < statusBarHeight) {
-                  console.log('AutoPositionedPopup: would go behind status bar, showing BELOW instead');
-                  // Show BELOW the trigger element
-                  // Since componentY + componentHeight represents the trigger's "reference bottom" (accounting for measurement offset),
-                  // we need to add another componentHeight to position popup BELOW the actual trigger
-                  // Formula: popup top = componentY + (2 * componentHeight)
-                  //   - (componentY + componentHeight) = trigger's actual top (compensated)
-                  //   - + componentHeight = skip past trigger height to get to trigger's actual bottom
-                  popupY = componentY + componentHeight + componentHeight;
-                  console.log('AutoPositionedPopup: BELOW position calculated:', {
-                    formula: 'componentY + 2*componentHeight',
-                    componentY,
-                    componentHeight,
-                    popupY
-                  });
+            const actualPopupHeight = CustomPopView && CustomPopViewStyle && typeof CustomPopViewStyle.height === 'number'
+              ? CustomPopViewStyle.height
+              : listLayout.height;
 
-                  // 3. Also check if showing below would go off the bottom of screen
-                  const maxY = screenHeight - popupHeight;
-                  if (popupY > maxY) {
-                    // If both positions are problematic, clamp to visible area
-                    // Prioritize showing as close to trigger as possible
-                    console.log('AutoPositionedPopup: both positions problematic, clamping to visible area');
-                    popupY = Math.min(Math.max(statusBarHeight, componentY - popupHeight), maxY);
-                  }
-                } else {
-                  console.log('AutoPositionedPopup: showing ABOVE input field (preferred position)');
-                }
-                console.log('AutoPositionedPopup final position:', {
-                  popupY,
-                  'showing above': popupY < componentY,
-                  'below status bar': popupY >= statusBarHeight
-                });
-                return {finalY: popupY, showAbove: popupY < componentY};
-              };
-              // Calculate position ONCE based on actual popup height
-              const actualPopupHeight = CustomPopView && CustomPopViewStyle && typeof CustomPopViewStyle.height === 'number'
-                ? CustomPopViewStyle.height
-                : listLayout.height;
-              console.log('AutoPositionedPopup 🔥 Using actualPopupHeight for calculation:', {actualPopupHeight, CustomPopView: !!CustomPopView});
-              const positionResult = calculateOptimalPosition(y, height, actualPopupHeight);
-              console.log('AutoPositionedPopup FINAL position result:', positionResult);
-              ref_listPos.current = {x: x, y: positionResult.finalY, width: width};
-              console.log('AutoPositionedPopup !useTextInput ref_listPos.current=', ref_listPos.current);
-              if (CustomPopView && CustomPopViewStyle) {
-                // Position already calculated correctly above, no need to recalculate
-                const PopViewComponent = CustomPopView();
-                console.log('AutoPositionedPopup !useTextInput addRootView=', {CustomPopViewStyle, PopViewComponent, 'state.selectedItem': state.selectedItem});
-                addRootView({
-                  id: tag,
-                  style: !centerDisplay
-                    ? {
-                      top: ref_listPos.current.y,
-                      left: popUpViewStyle?.left,
-                      width: popUpViewStyle?.width,
-                      height: listLayout.height,
-                      opacity: 1,
-                      ...CustomPopViewStyle,
-                    }
-                    : {width: popUpViewStyle?.width, height: listLayout.height, ...CustomPopViewStyle},
-                  component: <PopViewComponent selectedItem={state.selectedItem}></PopViewComponent>,
-                  useModal: true,
-                  onModalClose: () => {
-                    console.log('AutoPositionedPopup onModalClose');
-                    removeRootView(tag, forceRemoveAllRootViewOnItemSelected, rootViewsRef.current);
-                    setState((prevState) => {
-                      return {
-                        ...prevState,
-                        isFocus: false,
-                      };
-                    });
-                    hasAddedRootView.current = false;
-                    hasShownRootView.current = false;
-                    hasTriggeredFocus.current = false;
-                    setSearchQuery('');
-                  },
-                  centerDisplay,
-                });
-              } else {
-                console.log('AutoPositionedPopup !useTextInput addRootView tag=', tag);
-                addRootView({
-                  id: tag,
-                  style: {
-                    top: ref_listPos.current.y,
-                    left: popUpViewStyle?.left,
-                    width: popUpViewStyle?.width,
-                    height: listLayout.height,
-                    opacity: 1,
-                  },
-                  component: (
-                    <AutoPositionedPopupList
-                      tag={tag}
-                      updateState={updateState}
-                      fetchData={fetchData}
-                      pageSize={pageSize}
-                      renderItem={renderItem}
-                      selectedItem={state.selectedItem}
-                      localSearch={localSearch}
-                      showListEmptyComponent={showListEmptyComponent}
-                      emptyText={emptyText}
-                      themeMode={themeMode}
-                    />
-                  ),
-                  useModal: true,
-                  onModalClose: () => {
-                    console.log('AutoPositionedPopup onModalClose tag=', tag);
-                    removeRootView(tag, forceRemoveAllRootViewOnItemSelected, rootViewsRef.current);
-                    setState((prevState) => {
-                      return {
-                        ...prevState,
-                      };
-                    });
-                    setSearchQuery('');
-                  },
-                });
-              }
-            });
-          }
-        }
-        if (isKeyboardFullyShown) {
-          ref_isFocus.current = state.isFocus ?? false;
-          if (isKeyboardFullyShown !== keyboardVisibleRef.current) {
-            keyboardVisibleRef.current = isKeyboardFullyShown;
-            if (isKeyboardFullyShown && textInputRef.current) {
-              if (ref_searchQuery.current) {
-                textInputRef.current.setNativeProps({text: ref_searchQuery.current});
-              }
+            if (CustomPopView && CustomPopViewStyle) {
+              const PopViewComponent = CustomPopView();
+              debugLog('🔵🔵🔵 POPUP_V17 CustomPopView centerDisplay=true');
+              addRootView({
+                id: tag,
+                style: { width: popUpViewStyle?.width, ...CustomPopViewStyle },
+                component: <PopViewComponent selectedItem={state.selectedItem}></PopViewComponent>,
+                useModal: true,
+                centerDisplay: true, // V17: Force center display for useTextInput=false
+                onModalClose: () => {
+                  debugLog('AutoPositionedPopup V17 onModalClose tag=', tag);
+                  removeRootView(tag, forceRemoveAllRootViewOnItemSelected, rootViewsRef.current);
+                  setState((prevState) => ({ ...prevState }));
+                  setSearchQuery('');
+                },
+              });
+            } else {
+              debugLog('🔵🔵🔵 POPUP_V17 List centerDisplay=true, height=', listLayout.height);
+              addRootView({
+                id: tag,
+                style: { width: popUpViewStyle?.width, height: listLayout.height, opacity: 1 },
+                component: (
+                  <AutoPositionedPopupList
+                    tag={tag} updateState={updateState} fetchData={fetchData} pageSize={pageSize}
+                    renderItem={renderItem} selectedItem={state.selectedItem} localSearch={localSearch}
+                    showListEmptyComponent={showListEmptyComponent} emptyText={emptyText} themeMode={themeMode}
+                  />
+                ),
+                useModal: true,
+                centerDisplay: true, // V17: Force center display for useTextInput=false
+                onModalClose: () => {
+                  debugLog('AutoPositionedPopup V17 onModalClose tag=', tag);
+                  removeRootView(tag, forceRemoveAllRootViewOnItemSelected, rootViewsRef.current);
+                  setState((prevState) => ({ ...prevState }));
+                  setSearchQuery('');
+                },
+              });
             }
+            return; // V17: Early return after handling !useTextInput case
           }
         }
       }, [isKeyboardFullyShown,
-        state.isFocus,
-        useTextInput,
-        CustomPopView,
-        CustomPopViewStyle,
-        forceRemoveAllRootViewOnItemSelected,
-        tag, TextInputProps,
-        state.selectedItem, showListEmptyComponent, themeMode
-      ]);
-      // Imperative handle for parent component access
-      useImperativeHandle(
+      state.isFocus,
+      useTextInput,
+      CustomPopView,
+      CustomPopViewStyle,
+      forceRemoveAllRootViewOnItemSelected,
+      tag, TextInputProps,
+      state.selectedItem, showListEmptyComponent, themeMode
+    ]);
+
+    // V16: All positioning logic is now in the useEffect above (calculateOptimalPosition + processPosition)
+    // V16 FIX: Capture position in onPress callback BEFORE setState is called
+    // This ensures triggerPositionRef.current is set when useEffect runs
+    // Formula: top = componentY - popupHeight (popup bottom touches trigger top exactly)
+    debugLog('🟢 POPUP_MODULE_V16_LOADED - capturing position in onPress callback before setState');
+
+    // Imperative handle for parent component access
+    useImperativeHandle(
         parentRef,
         () => ({
           clearSelectedItem: () => {
-            console.log('AutoPositionedPopup clearSelectedItem tag=', tag);
+            debugLog('AutoPositionedPopup clearSelectedItem tag=', tag);
             setState((prevState) => {
               return {
                 ...prevState,
@@ -1027,14 +971,14 @@ const AutoPositionedPopup = memo(
         []
       );
       const updateState = (key: string, value: SelectedItem) => {
-        console.log('AutoPositionedPopup updateState=', {key, value});
+        debugLog('AutoPositionedPopup updateState=', {key, value});
         setState((prevState) => ({
           ...prevState,
           [key]: value,
         }));
         if (key === 'selectedItem' && onItemSelected) {
           onItemSelected(value);
-          console.log('AutoPositionedPopup updateState onItemSelected rootViewsRef.current=', rootViewsRef.current);
+          debugLog('AutoPositionedPopup updateState onItemSelected rootViewsRef.current=', rootViewsRef.current);
           removeRootView(tag, forceRemoveAllRootViewOnItemSelected, rootViewsRef.current);
           hasAddedRootView.current = false;
           hasShownRootView.current = false;
@@ -1069,7 +1013,7 @@ const AutoPositionedPopup = memo(
       // Only update when deep comparison detects real changes to avoid TextInput recreation due to reference changes during parent component redraws
       const stableInputStyle = useMemo(() => {
         if (!shallowEqual(stableInputStyleRef.current, inputStyle)) {
-          console.log(`AutoPositionedPopup stableInputStyle: `, {tag, inputStyle, themeMode});
+          debugLog(`AutoPositionedPopup stableInputStyle: `, {tag, inputStyle, themeMode});
           stableInputStyleRef.current = inputStyle;
         }
         return stableInputStyleRef.current;
@@ -1077,10 +1021,10 @@ const AutoPositionedPopup = memo(
 
       const stableTextInputProps = useMemo(() => {
         if (!shallowEqual(stableTextInputPropsRef.current, TextInputProps)) {
-          console.log(`AutoPositionedPopup TextInputProps deep change detected, updating stable reference - tag: ${tag}`);
+          debugLog(`AutoPositionedPopup TextInputProps deep change detected, updating stable reference - tag: ${tag}`);
           stableTextInputPropsRef.current = TextInputProps;
         }
-        console.log('AutoPositionedPopup stableTextInputProps=', {tag, TextInputProps, 'stableTextInputPropsRef.current': stableTextInputPropsRef.current})
+        debugLog('AutoPositionedPopup stableTextInputProps=', {tag, TextInputProps, 'stableTextInputPropsRef.current': stableTextInputPropsRef.current})
         return stableTextInputPropsRef.current;
       }, [TextInputProps, tag]);
 
@@ -1093,7 +1037,7 @@ const AutoPositionedPopup = memo(
       const handleTextInputFocus = useCallback(() => {
         const currentTime = Date.now();
         const timeSinceLastFocus = currentTime - lastFocusTimeRef.current;
-        console.log(
+        debugLog(
           'AutoPositionedPopup onFocus=',
           {
             tag,
@@ -1108,17 +1052,17 @@ const AutoPositionedPopup = memo(
         );
         // Prevent rapid repeated triggers (repeated events within 300ms are ignored)
         if (timeSinceLastFocus < 300) {
-          console.log('AutoPositionedPopup onFocus: Skip - event triggered too quickly (< 300ms)');
+          debugLog('AutoPositionedPopup onFocus: Skip - event triggered too quickly (< 300ms)');
           return;
         }
         // Skip if keyboard is already open and focus has been handled
         if (isKeyboardFullyShown && hasTriggeredFocus.current) {
-          console.log('AutoPositionedPopup onFocus: Skip - keyboard already open and focus handled');
+          debugLog('AutoPositionedPopup onFocus: Skip - keyboard already open and focus handled');
           return;
         }
         // Prevent concurrent processing
         if (isFocusEventProcessingRef.current) {
-          console.log('AutoPositionedPopup onFocus: Skip - processing another focus event');
+          debugLog('AutoPositionedPopup onFocus: Skip - processing another focus event');
           return;
         }
         isFocusEventProcessingRef.current = true;
@@ -1142,7 +1086,7 @@ const AutoPositionedPopup = memo(
       }, [tag, isKeyboardFullyShown]); // Remove state.selectedItem, use stateRef instead
 
       const handleTextInputBlur = useCallback(() => {
-        console.log(
+        debugLog(
           'AutoPositionedPopup onBlur=',
           {
             tag,
@@ -1153,7 +1097,7 @@ const AutoPositionedPopup = memo(
         );
         // If keyboard is still open, this is a false trigger caused by parent component re-render, should not reset
         if (isKeyboardFullyShown && hasTriggeredFocus.current) {
-          console.log('AutoPositionedPopup onBlur: Skip - keyboard still open, possibly caused by parent component re-render');
+          debugLog('AutoPositionedPopup onBlur: Skip - keyboard still open, possibly caused by parent component re-render');
           return;
         }
 
@@ -1182,7 +1126,7 @@ const AutoPositionedPopup = memo(
       // Wrap TextInput independently in useMemo to recreate only when key props change
       // This avoids repeated ref callback triggers due to other props changes during parent component redraws
       const memoizedTextInput = useMemo(() => {
-        console.log('AutoPositionedPopup memoizedTextInput=', {tag, useTextInput, 'state.isFocus': state.isFocus, stableTextInputProps});
+        debugLog('AutoPositionedPopup memoizedTextInput=', {tag, useTextInput, 'state.isFocus': state.isFocus, stableTextInputProps});
         if (!useTextInput || !state.isFocus) {
           return null;
         }
@@ -1191,11 +1135,11 @@ const AutoPositionedPopup = memo(
             ref={(ref) => {
               // Monitor TextInput mounting and unmounting
               if (ref && !textInputRef.current) {
-                console.log(`AutoPositionedPopup TextInput created/mounted - tag: ${tag}, ref:`, ref);
+                debugLog(`AutoPositionedPopup TextInput created/mounted - tag: ${tag}, ref:`, ref);
               } else if (!ref && textInputRef.current) {
-                console.log(`AutoPositionedPopup TextInput unmounted - tag: ${tag}`);
+                debugLog(`AutoPositionedPopup TextInput unmounted - tag: ${tag}`);
               } else if (ref && textInputRef.current && ref !== textInputRef.current) {
-                console.log(`AutoPositionedPopup TextInput replaced - tag: ${tag}, oldRef:`, textInputRef.current, 'newRef:', ref);
+                debugLog(`AutoPositionedPopup TextInput replaced - tag: ${tag}, oldRef:`, textInputRef.current, 'newRef:', ref);
               }
               textInputRef.current = ref;
             }}
@@ -1203,14 +1147,14 @@ const AutoPositionedPopup = memo(
             style={[
               styles.inputStyle,
               stableInputStyle,
-              (themeMode==='dark' && {color:'#fff'})
+              (themeMode==='dark' && {color:'#fff'}),
             ]}
             textAlign={stableTextInputProps && stableTextInputProps['textAlign'] || 'left'}
             multiline={stableTextInputProps && stableTextInputProps['multiline'] || false}
             numberOfLines={stableTextInputProps && stableTextInputProps['numberOfLines'] || 1}
             onChangeText={(searchQuery) => {
               ref_searchQuery.current = searchQuery;
-              console.log('AutoPositionedPopup onChangeText rootViews=', rootViews);
+              debugLog('AutoPositionedPopup onChangeText rootViews=', rootViews);
               if (!localSearch) {
                 if (debounceTimerRef.current) {
                   clearTimeout(debounceTimerRef.current);
@@ -1249,7 +1193,7 @@ const AutoPositionedPopup = memo(
             onBlur={handleTextInputBlur}
             selectTextOnFocus={stableTextInputProps && stableTextInputProps['selectTextOnFocus'] || false}
             onSubmitEditing={(e: NativeSyntheticEvent<TextInputSubmitEditingEventData>) => {
-              console.log(
+              debugLog(
                 'AutoPositionedPopup.tsx onSubmitEditing e.nativeEvent.text=',
                 e.nativeEvent.text
               );
@@ -1273,7 +1217,7 @@ const AutoPositionedPopup = memo(
 
       // Render the component following project implementation
       return useMemo(() => {
-        console.log('AutoPositionedPopup render tag=', tag); // Now safe - circular dependency fixed
+        debugLog('AutoPositionedPopup render tag=', tag); // Now safe - circular dependency fixed
         return (
           <CustomRow>
             <View style={[styles.contain, style]} ref={refAutoPositionedPopup}>
@@ -1283,7 +1227,7 @@ const AutoPositionedPopup = memo(
                   style={[styles.AutoPositionedPopupBtn, AutoPositionedPopupBtnStyle]}
                   disabled={AutoPositionedPopupBtnDisabled}
                   onPress={() => {
-                    console.log('AutoPositionedPopup onPress=', {
+                    debugLog('AutoPositionedPopup onPress=', {
                       tag,
                       'state.isFocus': state.isFocus,
                       useTextInput,
@@ -1296,10 +1240,13 @@ const AutoPositionedPopup = memo(
 
                     // Capture trigger button position BEFORE switching to TextInput
                     // This is critical because triggerBtnRef will become null after isFocus=true
-                    if (triggerBtnRef.current && parentScrollViewRef?.current) {
+                    // IMPORTANT: Always capture position regardless of parentScrollViewRef
+                    if (triggerBtnRef.current) {
                       triggerBtnRef.current.measureInWindow((x, y, width, height) => {
-                        console.log('AutoPositionedPopup onPress: captured trigger position=', {tag, x, y, width, height});
-                        triggerPositionRef.current = {x, y, width, height};
+                        debugLog('AutoPositionedPopup onPress: captured trigger position=', {tag, x, y, width, height});
+                        if (x !== undefined && y !== undefined && width !== undefined && height !== undefined) {
+                          triggerPositionRef.current = {x, y, width, height};
+                        }
                       });
                     }
 
@@ -1357,6 +1304,9 @@ const AutoPositionedPopup = memo(
                         _addRootView()
                       }
                     } else {
+                      // V17 SIMPLIFICATION: For useTextInput=false, popup will be centered
+                      // No need for complex position measurement - just trigger focus
+                      debugLog('🔵🔵🔵 POPUP_V17 onPress useTextInput=false, will show centered popup');
                       setState((prevState) => {
                         return {
                           ...prevState,
@@ -1364,7 +1314,7 @@ const AutoPositionedPopup = memo(
                         };
                       });
                     }
-                    console.log('AutoPositionedPopup onPress done')
+                    debugLog('AutoPositionedPopup onPress done')
                   }}
                 >
                   {!btwChildren ? (
@@ -1391,29 +1341,29 @@ const AutoPositionedPopup = memo(
         );
       }, [
         tag,
-        // ✅ CRITICAL FIX: Remove all props that may change frequently or are inline functions
+        // �?CRITICAL FIX: Remove all props that may change frequently or are inline functions
         // Changes to these props should not cause the entire component tree to recreate, especially TextInput
-        // fetchData,  // ❌ Removed: inline function
-        // renderItem,  // ❌ Removed: possibly inline function
-        // onItemSelected,  // ❌ Removed: possibly inline function
-        // onSubmitEditing,  // ❌ Removed: possibly inline function
+        // fetchData,  // �?Removed: inline function
+        // renderItem,  // �?Removed: possibly inline function
+        // onItemSelected,  // �?Removed: possibly inline function
+        // onSubmitEditing,  // �?Removed: possibly inline function
         localSearch,
-        // placeholder,  // ❌ Removed: may change
-        // textAlign,  // ❌ Removed: may change
+        // placeholder,  // �?Removed: may change
+        // textAlign,  // �?Removed: may change
         pageSize,
         selectedItem,
-        // CustomRow,  // ❌ Removed: inline function, new reference each time
+        // CustomRow,  // �?Removed: inline function, new reference each time
         useTextInput,
-        // btwChildren,  // ❌ Removed: inline function
-        // keyExtractor,  // ❌ Removed: possibly inline function
-        // AutoPositionedPopupBtnStyle,  // ❌ Removed: possibly inline object
-        // CustomPopView,  // ❌ Removed: may change
-        // CustomPopViewStyle,  // ❌ Removed: may change
+        // btwChildren,  // �?Removed: inline function
+        // keyExtractor,  // �?Removed: possibly inline function
+        // AutoPositionedPopupBtnStyle,  // �?Removed: possibly inline object
+        // CustomPopView,  // �?Removed: may change
+        // CustomPopViewStyle,  // �?Removed: may change
         forceRemoveAllRootViewOnItemSelected,
         state.isFocus,
         showListEmptyComponent,
         emptyText,
-        // ✅ Removed most dependencies that may cause re-rendering, keeping only core dependencies that truly affect component structure
+        // �?Removed most dependencies that may cause re-rendering, keeping only core dependencies that truly affect component structure
         // This prevents TextInput recreation due to inline functions/objects during parent component redraws
       ]);
     }

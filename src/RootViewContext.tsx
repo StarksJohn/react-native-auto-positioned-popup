@@ -1,6 +1,14 @@
 import React, {ReactNode, createContext, useContext, useEffect, useMemo, useRef, useState} from 'react';
 import {Pressable, View, ViewStyle, Keyboard} from 'react-native';
 
+// DEBUG FLAG: Set to false to disable all console logs for better performance
+const ROOTVIEW_DEBUG = false;
+const debugLog = (...args: any[]) => {
+  if (ROOTVIEW_DEBUG) {
+    console.log(...args);
+  }
+};
+
 interface DynamicViewBase {
   id: string;
   style: ViewStyle;
@@ -35,13 +43,13 @@ export const RootViewProvider: React.FC<RootViewProviderProps> = ({children}) =>
   const [searchQuery, setSearchQuery] = useState<string>('');
   const viewRefs = useRef<Record<string, View>>({});
   useEffect(() => {
-    console.log('react-native-auto-positioned-popup RootViewProvider rootViews changed:', rootViews);
+    debugLog('react-native-auto-positioned-popup RootViewProvider rootViews changed:', rootViews);
   }, [rootViews]);
   const addRootView = (view: DynamicViewBase): void => {
     // const id = `dynamic-view-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const newView: DynamicViewBase = {...view};
-    console.log('react-native-auto-positioned-popup RootViewProvider addRootView rootViews=', rootViews);
-    console.log('react-native-auto-positioned-popup RootViewProvider addRootView newView=', newView);
+    debugLog('react-native-auto-positioned-popup RootViewProvider addRootView rootViews=', rootViews);
+    debugLog('react-native-auto-positioned-popup RootViewProvider addRootView newView=', newView);
     setRootViews((prev) => [...prev, newView]);
   };
 
@@ -60,7 +68,7 @@ export const RootViewProvider: React.FC<RootViewProviderProps> = ({children}) =>
    * @param _rootViews
    */
   const removeRootView = (id?: string, force?: boolean, _rootViews?: DynamicViewBase[]): void => {
-    console.log('react-native-auto-positioned-popup RootViewProvider removeRootView=', {id, force, rootViews, _rootViews});
+    debugLog('react-native-auto-positioned-popup RootViewProvider removeRootView=', {id, force, rootViews, _rootViews});
     // Ensure keyboard is dismissed when force removing all root views
     if (force) {
       // Dismiss keyboard first
@@ -70,14 +78,14 @@ export const RootViewProvider: React.FC<RootViewProviderProps> = ({children}) =>
       // 100ms gives touch event system enough time to process pending events before views are removed
       setTimeout(() => {
         setRootViews((prev) => []);
-        console.log('react-native-auto-positioned-popup RootViewProvider removeRootView setRootViews(prev => []) force=true');
+        debugLog('react-native-auto-positioned-popup RootViewProvider removeRootView setRootViews(prev => []) force=true');
       }, 100);
       return;
     }
     if (rootViews.length > 0 && id) {
       setRootViews((prev) => prev.filter((view) => view.id !== id));
       // else {
-      //   console.log('RootViewProvider removeRootView setRootViews(prev => [])')
+      //   debugLog('RootViewProvider removeRootView setRootViews(prev => [])')
       //   setRootViews(prev => [])
       // }
     } else if (_rootViews && _rootViews.length > 0 && id) {
@@ -86,10 +94,13 @@ export const RootViewProvider: React.FC<RootViewProviderProps> = ({children}) =>
   };
 
   const setRootViewNativeStyle = (id: string, style: ViewStyle): void => {
+    debugLog('RootViewContext setRootViewNativeStyle called=', {id, style});
     const target = viewRefs.current[id];
+    debugLog('RootViewContext setRootViewNativeStyle target exists=', !!target);
     if (target) {
       // @ts-ignore - React Native setNativeProps
       target.setNativeProps({style});
+      debugLog('RootViewContext setRootViewNativeStyle applied style=', style);
     }
   };
 
@@ -112,7 +123,7 @@ export const RootViewProvider: React.FC<RootViewProviderProps> = ({children}) =>
         {children}
         {rootViews.map(
           ({id, style, component, useModal, onModalClose, centerDisplay}: DynamicViewBase): React.JSX.Element => {
-            console.log('react-native-auto-positioned-popup RootViewProvider rootViews.map=', {id, style, component, useModal, centerDisplay});
+            debugLog('react-native-auto-positioned-popup RootViewProvider rootViews.map=', {id, style, component, useModal, centerDisplay});
             return !useModal ? (
               <View
                 key={id}
@@ -141,7 +152,7 @@ export const RootViewProvider: React.FC<RootViewProviderProps> = ({children}) =>
                   centerDisplay && {justifyContent: 'center', alignItems: 'center'},
                 ]}
                 onPress={() => {
-                  console.log('react-native-auto-positioned-popup RootViewProvider Pressable onPress rootViews=', rootViews);
+                  debugLog('react-native-auto-positioned-popup RootViewProvider Pressable onPress rootViews=', rootViews);
                   removeRootView(id, true);
                   onModalClose && onModalClose();
                 }}

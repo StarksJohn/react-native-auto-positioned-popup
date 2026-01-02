@@ -40,6 +40,8 @@ export default StyleSheet.create({
     borderRadius: 8,
   },
   autoPositionedPopupList: {
+    // V11: Restore original layout - popup maintains fixed 200px height
+    // Content renders at top, user requirement: no auto-sizing
     flex: 1,
     height: '100%',
     padding: 12,

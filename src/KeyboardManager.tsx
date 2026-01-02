@@ -1,6 +1,14 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Keyboard, EmitterSubscription, Platform } from 'react-native';
 
+// DEBUG FLAG: Set to false to disable all console logs for better performance
+const KEYBOARD_DEBUG = false;
+const debugLog = (...args: any[]) => {
+  if (KEYBOARD_DEBUG) {
+    console.log(...args);
+  }
+};
+
 // Debounce function
 const debounce = (func: Function, delay: number) => {
   let timer: NodeJS.Timeout;
@@ -25,13 +33,13 @@ export const useKeyboardStatus = () => {
 
     // ✅ FIX: Check state before debounce
     if (currentKeyboardStatusRef.current === value) {
-      console.log('KeyboardManager: Skip - Keyboard state unchanged (before debounce)', { value, timeSinceLastUpdate });
+      debugLog('KeyboardManager: Skip - Keyboard state unchanged (before debounce)', { value, timeSinceLastUpdate });
       return;
     }
 
     // ✅ FIX: Skip if the same value is already pending
     if (pendingValueRef.current === value) {
-      console.log('KeyboardManager: Skip - Same value already in processing queue', { value });
+      debugLog('KeyboardManager: Skip - Same value already in processing queue', { value });
       return;
     }
 
@@ -47,12 +55,12 @@ export const useKeyboardStatus = () => {
     debounce((value: boolean, currentTime: number, timeSinceLastUpdate: number) => {
       // ✅ FIX: Check state again (in case state was updated during debounce)
       if (currentKeyboardStatusRef.current === value) {
-        console.log('KeyboardManager: Skip - Keyboard state unchanged (after debounce)', { value, timeSinceLastUpdate });
+        debugLog('KeyboardManager: Skip - Keyboard state unchanged (after debounce)', { value, timeSinceLastUpdate });
         pendingValueRef.current = null;
         return;
       }
 
-      console.log('KeyboardManager: Setting keyboard status to', value, {
+      debugLog('KeyboardManager: Setting keyboard status to', value, {
         previousValue: currentKeyboardStatusRef.current,
         timeSinceLastUpdate
       });
@@ -78,7 +86,7 @@ export const useKeyboardStatus = () => {
       () => {
         // ✅ FIX: Add protection at event listener level - skip if keyboard is already open
         if (currentKeyboardStatusRef.current === true) {
-          console.log('KeyboardManager: Skip keyboardDidShow event - Keyboard is already open');
+          debugLog('KeyboardManager: Skip keyboardDidShow event - Keyboard is already open');
           return;
         }
         debouncedSetKeyboardShown(true);
@@ -89,7 +97,7 @@ export const useKeyboardStatus = () => {
       () => {
         // ✅ FIX: Add protection at event listener level - skip if keyboard is already closed
         if (currentKeyboardStatusRef.current === false) {
-          console.log('KeyboardManager: Skip keyboardDidHide event - Keyboard is already closed');
+          debugLog('KeyboardManager: Skip keyboardDidHide event - Keyboard is already closed');
           return;
         }
         debouncedSetKeyboardShown(false);
