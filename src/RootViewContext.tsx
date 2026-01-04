@@ -1,5 +1,5 @@
 import React, {ReactNode, createContext, useContext, useEffect, useMemo, useRef, useState} from 'react';
-import {Pressable, View, ViewStyle, Keyboard} from 'react-native';
+import {Pressable, View, ViewStyle, Keyboard, StyleSheet} from 'react-native';
 
 // DEBUG FLAG: Set to false to disable all console logs for better performance
 const ROOTVIEW_DEBUG = false;
@@ -119,22 +119,33 @@ export const RootViewProvider: React.FC<RootViewProviderProps> = ({children}) =>
 
   return (
     <RootViewContext.Provider value={contextValue}>
-      <>
+      {/* CRITICAL FIX: Use View with flex:1 instead of Fragment */}
+      {/* Fragment doesn't create actual View, causing absolute positioning to use wrong ancestor */}
+      {/* View with flex:1 ensures popup container positions relative to this full-screen View */}
+      <View style={rootViewStyles.container}>
         {children}
-        {rootViews.map(
-          ({id, style, component, useModal, onModalClose, centerDisplay}: DynamicViewBase): React.JSX.Element => {
-            debugLog('react-native-auto-positioned-popup RootViewProvider rootViews.map=', {id, style, component, useModal, centerDisplay});
-            return !useModal ? (
-              <View
-                key={id}
-                ref={(r) => {
-                  if (r) viewRefs.current[id] = r;
-                }}
-                style={[style, {position: 'absolute'}]}
-              >
-                {component}
-              </View>
-            ) : (
+        {/* CRITICAL: Full-screen container ensures absolute positioning is relative to screen */}
+        {/* Without this, popup position may be offset by parent containers */}
+        {rootViews.length > 0 && (
+          <View
+            pointerEvents="box-none"
+            style={rootViewStyles.popupContainer}
+          >
+            {rootViews.map(
+              ({id, style, component, useModal, onModalClose, centerDisplay}: DynamicViewBase): React.JSX.Element => {
+                // POSITION DEBUG: Log the actual top value being applied (simple format for cleaner logs)
+                console.log(`📍 RENDER_STYLE id=${id} top=${style?.top} left=${style?.left} w=${style?.width} h=${style?.height} op=${style?.opacity}`);
+                return !useModal ? (
+                  <View
+                    key={id}
+                    ref={(r) => {
+                      if (r) viewRefs.current[id] = r;
+                    }}
+                    style={[style, {position: 'absolute'}]}
+                  >
+                    {component}
+                  </View>
+                ) : (
               <Pressable
                 key={id}
                 style={[
@@ -180,11 +191,28 @@ export const RootViewProvider: React.FC<RootViewProviderProps> = ({children}) =>
             // >
             // </Modal>)
           }
+            )}
+          </View>
         )}
-      </>
+      </View>
     </RootViewContext.Provider>
   );
 };
+
+// Styles for RootView container - extracted for better performance
+const rootViewStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  popupContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 99999,
+  },
+});
 /*
   const { addRootView, updateRootView, removeRootView ,searchQuery } = useRootView();
  */

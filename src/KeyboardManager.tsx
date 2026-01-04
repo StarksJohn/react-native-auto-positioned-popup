@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Keyboard, EmitterSubscription, Platform } from 'react-native';
+import { Keyboard, EmitterSubscription, Platform, KeyboardEvent } from 'react-native';
 
 // DEBUG FLAG: Set to false to disable all console logs for better performance
 const KEYBOARD_DEBUG = false;
@@ -18,8 +18,16 @@ const debounce = (func: Function, delay: number) => {
   };
 };
 
-export const useKeyboardStatus = () => {
+// V19: Return type for keyboard status hook - includes height for accurate positioning
+interface KeyboardStatus {
+  isShown: boolean;
+  height: number;
+}
+
+export const useKeyboardStatus = (): KeyboardStatus => {
   const [isKeyboardFullyShown, setIsKeyboardFullyShown] = useState(false);
+  // V19: Track keyboard height for popup positioning
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   // Add state cache to avoid repeatedly setting the same state
   const currentKeyboardStatusRef = useRef<boolean>(false);
@@ -83,7 +91,12 @@ export const useKeyboardStatus = () => {
     // Remove Will event listeners to avoid duplicate triggers and state race conditions
     keyboardDidShowListener = Keyboard.addListener(
       'keyboardDidShow',
-      () => {
+      (e: KeyboardEvent) => {
+        // V19: Capture keyboard height from event for accurate popup positioning
+        const height = e.endCoordinates?.height || 0;
+        debugLog('KeyboardManager: keyboardDidShow event', { height });
+        setKeyboardHeight(height);
+
         // ✅ FIX: Add protection at event listener level - skip if keyboard is already open
         if (currentKeyboardStatusRef.current === true) {
           debugLog('KeyboardManager: Skip keyboardDidShow event - Keyboard is already open');
@@ -95,6 +108,9 @@ export const useKeyboardStatus = () => {
     keyboardDidHideListener = Keyboard.addListener(
       'keyboardDidHide',
       () => {
+        // V19: Reset keyboard height when keyboard hides
+        setKeyboardHeight(0);
+
         // ✅ FIX: Add protection at event listener level - skip if keyboard is already closed
         if (currentKeyboardStatusRef.current === false) {
           debugLog('KeyboardManager: Skip keyboardDidHide event - Keyboard is already closed');
@@ -110,5 +126,6 @@ export const useKeyboardStatus = () => {
     };
   }, []);
 
-  return isKeyboardFullyShown;
+  // V19: Return both keyboard visibility status and height
+  return { isShown: isKeyboardFullyShown, height: keyboardHeight };
 };

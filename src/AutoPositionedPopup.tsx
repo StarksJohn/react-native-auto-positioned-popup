@@ -1,14 +1,24 @@
 // Module load marker - unique ID for tracking code version
+// V19f (2025-01-04): CORRECT direction for coordinate adjustment - ADD statusBarHeight to move popup DOWN
+// Wait 1 second for KeyboardAwareScrollView to stabilize, then use measureInWindow to get trigger's FINAL position
+// NOTE: Parent component (KeyboardAwareScrollView) is responsible for scrolling trigger into view
 // DEBUG FLAG: Set to false to disable all console logs for better performance
-const POPUP_DEBUG = false;
+const POPUP_DEBUG = false; // DISABLED: Too many logs cause app freeze
+const POPUP_POSITION_DEBUG = true; // Only log positioning calculations
 const debugLog = (...args: any[]) => {
   if (POPUP_DEBUG) {
     console.log(...args);
   }
 };
+// Separate logging function for position-related logs only
+const positionDebugLog = (...args: any[]) => {
+  if (POPUP_POSITION_DEBUG) {
+    console.log(...args);
+  }
+};
 
 // Only log module load in debug mode
-debugLog('POPUP_MODULE_V17_LOADED at ' + new Date().toISOString());
+positionDebugLog('POPUP_MODULE_V19f_LOADED at ' + new Date().toISOString() + ' (Parent handles scroll)');
 
 import React, {
   ForwardedRef,
@@ -382,6 +392,8 @@ const AutoPositionedPopup = memo(
       const ref_searchQuery = useRef<string>('');
       // Store trigger button position when clicked (before it's replaced by TextInput)
       const triggerPositionRef = useRef<{x: number; y: number; width: number; height: number} | null>(null);
+      // V19: Track keyboard height for accurate popup positioning
+      const keyboardHeightRef = useRef<number>(0);
       // Add ref to track previous keyboard state to avoid false triggers during parent component re-renders
       const prevIsKeyboardFullyShownRef = useRef<boolean>(false);
       const prevPropsRef = useRef<{
@@ -416,11 +428,16 @@ const AutoPositionedPopup = memo(
       const searchQueryRef = useRef<string>(''); // Use ref instead of state to avoid re-renders
       // Refs to store latest values for useEffect without adding to dependency array
       const dataRef = useRef<SelectedItem[]>(data);
-      const isKeyboardFullyShown = useKeyboardStatus();
+      // V19: useKeyboardStatus now returns { isShown, height } for accurate positioning
+      const keyboardStatus = useKeyboardStatus();
+      const isKeyboardFullyShown = keyboardStatus.isShown;
       const ref_isKeyboardFullyShown = useRef<boolean>(isKeyboardFullyShown);
       useEffect(() => {
         ref_isKeyboardFullyShown.current = isKeyboardFullyShown;
-      }, [isKeyboardFullyShown])
+        // V19: Store keyboard height for popup positioning calculations
+        keyboardHeightRef.current = keyboardStatus.height;
+        positionDebugLog(`KEYBOARD_HEIGHT_UPDATE: height=${keyboardStatus.height} isShown=${isKeyboardFullyShown}`);
+      }, [keyboardStatus.isShown, keyboardStatus.height])
       const theme = defaultTheme;
 
       /**
@@ -674,30 +691,46 @@ const AutoPositionedPopup = memo(
         const statusBarHeight = getStatusBarHeight();
         if (useTextInput) {
           if (isKeyboardFullyShown && hasAddedRootView.current && !hasShownRootView.current && state.isFocus) {
-            // KEYBOARD AVOIDANCE FIX: Scroll parent ScrollView to keep trigger visible
-            // When keyboard appears, the trigger button may be covered. If parentScrollViewRef
-            // is provided, scroll the parent to keep the trigger visible above the keyboard.
-            if (parentScrollViewRef?.current) {
-              debugLog('AutoPositionedPopup: Keyboard appeared, scrolling parent to keep trigger visible');
-              // Use a slight delay to ensure keyboard animation has started
-              setTimeout(() => {
-                scrollToTriggerWithMeasure();
-              }, 100);
+            // KEYBOARD AVOIDANCE FIX: Use KeyboardAwareScrollView's native scrollToFocusedInput method
+            // This properly scrolls to the dynamically created TextInput without causing double scrolling.
+            // The previous custom scrollToTriggerWithMeasure() caused over-scrolling issues.
+            if (parentScrollViewRef?.current && textInputRef.current) {
+              debugLog('AutoPositionedPopup: Keyboard appeared, using scrollToFocusedInput to scroll parent');
+              // Use KeyboardAwareScrollView's native method to scroll to the focused TextInput
+              // This is more reliable than custom scroll calculations
+              const scrollView = parentScrollViewRef.current;
+              if (typeof scrollView.scrollToFocusedInput === 'function') {
+                // findNodeHandle is needed to get the native node reference
+                const nodeHandle = findNodeHandle(textInputRef.current);
+                if (nodeHandle) {
+                  // scrollToFocusedInput expects a ReactNode, use the TextInput ref
+                  scrollView.scrollToFocusedInput(textInputRef.current, scrollExtraHeight);
+                  debugLog('AutoPositionedPopup: Called scrollToFocusedInput with extraHeight=', scrollExtraHeight);
+                }
+              } else {
+                debugLog('AutoPositionedPopup: scrollToFocusedInput not available, skipping scroll');
+              }
             }
 
             // CRITICAL FIX FOR KEYBOARD POSITION CALCULATION
             // Problem: When keyboard appears, the page shifts up but measureInWindow executes too early
-            // Solution: Wait for keyboard animation (300ms) + use requestAnimationFrame for next render frame
+            // Solution: Wait for keyboard animation + page scroll to complete before measuring
             //
             // Timing breakdown:
             // 1. Keyboard animation: ~250-300ms (iOS/Android)
-            // 2. Page shift animation: ~200-300ms (KeyboardAvoidingView)
-            // 3. Layout tree update: ~50-100ms (React Native)
-            // Total: ~500-700ms needed for stable layout
+            // 2. Page shift animation: ~300-500ms (KeyboardAwareScrollView)
+            // 3. Layout tree update: ~100-200ms (React Native)
+            // Total: ~700-1000ms needed for stable layout
             //
-            // Strategy: setTimeout(300ms) waits for most animations to complete,
+            // USER REQUEST (2025-01-04): Wait 1 second (1000ms) after keyboard appears
+            // to ensure trigger component position has fully stabilized after scroll
+            //
+            // Strategy: setTimeout(1000ms) waits for all animations to complete,
             // then requestAnimationFrame ensures measurement happens after next render frame
+            const KEYBOARD_STABILIZATION_DELAY = 500; // 500ms as requested by user
+            positionDebugLog(`POPUP_WAIT: Waiting ${KEYBOARD_STABILIZATION_DELAY}ms for keyboard/scroll stabilization, tag=${tag}`);
             setTimeout(() => {
+              positionDebugLog(`POPUP_MEASURE_START: ${KEYBOARD_STABILIZATION_DELAY}ms elapsed, now measuring position for tag=${tag}`);
               requestAnimationFrame(() => {
                 // CRITICAL FIX: Measure CURRENT position AFTER keyboard animation completes
                 // DO NOT use stored triggerPositionRef because keyboard may have shifted the view up
@@ -705,10 +738,7 @@ const AutoPositionedPopup = memo(
                 // which reflects the ACTUAL current position after keyboard shift
 
                 // DEBUG: Log both refs to compare their positions
-                debugLog('AutoPositionedPopup DEBUG: refs status=', {
-                  hasTextInputRef: !!textInputRef.current,
-                  hasRefAutoPositionedPopup: !!refAutoPositionedPopup.current,
-                });
+                positionDebugLog(`POPUP_REFS: textInputRef=${!!textInputRef.current} refAutoPositionedPopup=${!!refAutoPositionedPopup.current}`);
 
                 // Measure BOTH refs for comparison
                 if (textInputRef.current && refAutoPositionedPopup.current) {
@@ -749,111 +779,72 @@ const AutoPositionedPopup = memo(
                 const usingTextInputRef = measureTarget === textInputRef.current;
                 debugLog('AutoPositionedPopup useTextInput: using measureTarget=', usingTextInputRef ? 'textInputRef' : 'refAutoPositionedPopup');
 
-                // Measure CURRENT position (after keyboard shifted the view)
-                measureTarget.measureInWindow((x: number | undefined, y: number | undefined, width: number | undefined, height: number | undefined) => {
-                  debugLog('AutoPositionedPopup useTextInput: measured position for positioning=', {
-                    x, y, width, height,
-                    measureTarget: usingTextInputRef ? 'textInputRef' : 'refAutoPositionedPopup'
-                  });
+                // V19f: Position popup above trigger
+                // Parent KeyboardAwareScrollView is responsible for scrolling trigger into view
+                // This component only handles popup positioning relative to trigger's FINAL position
+                const screenHeight = Dimensions.get('window').height;
+                const screenWidth = Dimensions.get('window').width;
+                const currentKeyboardHeight = keyboardHeightRef.current;
+                const popupHeight = listLayout.height; // 200px
 
-                  // Handle undefined values (can happen during navigation transitions)
+                positionDebugLog(`V19f_SCREEN: height=${screenHeight} width=${screenWidth} keyboardH=${currentKeyboardHeight} statusBarH=${statusBarHeight}`);
+
+                measureTarget.measureInWindow((x: number | undefined, y: number | undefined, width: number | undefined, height: number | undefined) => {
+                  positionDebugLog(`V19f_MEASURE: triggerX=${x} triggerY=${y} triggerW=${width} triggerH=${height}`);
+
+                  // Handle undefined values
                   if (x === undefined || y === undefined || width === undefined || height === undefined) {
-                    debugLog('AutoPositionedPopup useTextInput: measureInWindow returned undefined, using fallback');
-                    const screenHeightFallback = Dimensions.get('window').height;
-                    const screenWidthFallback = Dimensions.get('window').width;
-                    const fallbackY = (screenHeightFallback - listLayout.height) / 2;
-                    x = screenWidthFallback * 0.05;
-                    y = fallbackY;
-                    width = screenWidthFallback * 0.9;
-                    height = 50;
+                    positionDebugLog('V19f: undefined values, using center fallback');
+                    const fallbackY = (screenHeight - currentKeyboardHeight - popupHeight) / 2;
+                    updateRootView(tag, {
+                      style: { top: fallbackY, left: popUpViewStyle?.left, width: popUpViewStyle?.width, height: popupHeight, opacity: 1 }
+                    });
+                    hasShownRootView.current = true;
+                    return;
                   }
 
-                  // Calculate screen height and popup position
-                  const screenHeight = Dimensions.get('window').height;
-                  debugLog('AutoPositionedPopup useTextInput positioning data=', {
-                    screenHeight,
-                    componentY: y,
-                    componentHeight: height,
-                    listHeight: listLayout.height
-                  });
+                  const triggerTop = y;
+                  const triggerHeight = height;
+                  const triggerBottom = y + height;
+                  const keyboardTop = screenHeight - currentKeyboardHeight;
 
-                  // POSITIONING LOGIC (with keyboard):
-                  // Simple rule: popup must TOUCH the trigger with NO GAP
-                  // 1. Default: show ABOVE trigger (popup bottom touches trigger top)
-                  // 2. If ABOVE would overlap status bar: show BELOW (popup top touches trigger bottom)
+                  positionDebugLog(`V19f_ANALYSIS: triggerTop=${triggerTop} triggerBottom=${triggerBottom} keyboardTop=${keyboardTop}`);
 
-                  debugLog('AutoPositionedPopup POSITIONING:', {
-                    triggerY: y,
-                    triggerHeight: height,
-                    triggerBottom: y + height,
-                    popupHeight: listLayout.height,
-                    screenHeight,
-                    statusBarHeight
-                  });
-
-                  // 1. Default: show popup ABOVE the trigger
-                  // Popup has internal padding (12px from autoPositionedPopupList style)
-                  // To make popup CONTENT touch trigger (not container), add padding offset
-                  // Container bottom at y + POPUP_PADDING, content bottom at y (no gap)
-                  const POPUP_PADDING = 12;
-                  let popupY = y - listLayout.height + POPUP_PADDING;
+                  // V19f: Position popup DIRECTLY above trigger
+                  // ADD statusBarHeight to close the gap (coordinates adjustment)
+                  let popupY = triggerTop - popupHeight + statusBarHeight;
                   let position = 'ABOVE';
 
-                  debugLog('AutoPositionedPopup: trying ABOVE position:', {
-                    popupY,
-                    popupBottom: popupY + listLayout.height,
-                    contentBottom: popupY + listLayout.height - POPUP_PADDING,
-                    triggerTop: y,
-                    paddingOffset: POPUP_PADDING,
-                    wouldOverlapStatusBar: popupY < statusBarHeight
-                  });
+                  positionDebugLog(`V19f_CALC: base=${triggerTop - popupHeight} + statusBarH=${statusBarHeight} = popupY=${popupY}`);
 
-                  // 2. If showing ABOVE would go behind status bar, show BELOW instead
-                  if (popupY < statusBarHeight) {
-                    // Show BELOW: popup top at trigger bottom
-                    // Use trigger's measured height as buffer to account for row padding
-                    // The TextInput is only part of the trigger row - row height scales with trigger height
-                    const BELOW_BUFFER = height;
-                    popupY = y + height + BELOW_BUFFER;
+                  // Safety check: ensure popup doesn't go above screen top
+                  if (popupY < 0) {
+                    // If popup would go off screen top, position it BELOW trigger instead
+                    popupY = triggerBottom + statusBarHeight;
                     position = 'BELOW';
-
-                    debugLog('AutoPositionedPopup: using BELOW position (ABOVE overlaps status bar):', {
-                      popupY,
-                      triggerBottom: y + height,
-                      buffer: BELOW_BUFFER,
-                      actualGap: BELOW_BUFFER
-                    });
-
-                    // 3. Safety check: if BELOW would go off screen bottom, clamp it
-                    const maxY = screenHeight - listLayout.height;
+                    // Clamp to stay above keyboard
+                    const maxY = keyboardTop - popupHeight;
                     if (popupY > maxY) {
                       popupY = maxY;
-                      debugLog('AutoPositionedPopup: clamped to screen bottom:', { popupY, maxY });
                     }
-                  } else {
-                    debugLog('AutoPositionedPopup: using ABOVE position (preferred)');
+                    positionDebugLog(`V19f_BELOW: popupY=${popupY} (clamped to stay above keyboard)`);
                   }
 
-                  debugLog('AutoPositionedPopup FINAL POSITION:', { position, popupY, touchesTrigger: true });
+                  // V19f: Verification
+                  const popupBottom = popupY + popupHeight;
+                  const gapPixels = triggerTop - popupBottom;
 
-                  ref_listPos.current = {x: x, y: popupY, width: width};
-                  debugLog('AutoPositionedPopup useTextInput final position=', ref_listPos.current);
+                  positionDebugLog(`V19f_RESULT: position=${position} popupY=${popupY} popupBottom=${popupBottom}`);
+                  positionDebugLog(`V19f_GAP: trigger_top=${triggerTop} - popup_bottom=${popupBottom} = gap=${gapPixels}px`);
 
-                  // Use updateRootView instead of setRootViewNativeStyle for more reliable style updates
-                  // setNativeProps may not work correctly when initial style is in an array
-                  const newStyle = {
-                    top: ref_listPos.current?.y,
-                    left: popUpViewStyle?.left,
-                    width: popUpViewStyle?.width,
-                    height: listLayout.height,
-                    opacity: 1,
-                  };
-                  debugLog('AutoPositionedPopup useTextInput: applying new style via updateRootView=', newStyle);
-                  updateRootView(tag, {style: newStyle});
+                  ref_listPos.current = {x, y: popupY, width};
+                  updateRootView(tag, {
+                    style: { top: popupY, left: popUpViewStyle?.left, width: popUpViewStyle?.width, height: listLayout.height, opacity: 1 }
+                  });
                   hasShownRootView.current = true;
                 });
               });
-            }, 300) // 300ms is sufficient for keyboard animation, as proven by user testing (even 3000ms didn't fix wrong logic)
+            }, KEYBOARD_STABILIZATION_DELAY) // 1000ms to wait for keyboard + scroll stabilization (user request 2025-01-04)
           } else if (!isKeyboardFullyShown && ref_isFocus.current && keyboardStateChanged) {
             // Only execute close logic when keyboard state actually changes from true to false
             debugLog(
@@ -938,11 +929,10 @@ const AutoPositionedPopup = memo(
       state.selectedItem, showListEmptyComponent, themeMode
     ]);
 
-    // V16: All positioning logic is now in the useEffect above (calculateOptimalPosition + processPosition)
-    // V16 FIX: Capture position in onPress callback BEFORE setState is called
-    // This ensures triggerPositionRef.current is set when useEffect runs
+    // V18: All positioning logic is now in the useEffect above
+    // V18 FIX (2025-01-04): Wait 1000ms after keyboard appears before measuring position
+    // This ensures trigger position is stable after KeyboardAwareScrollView scrolls
     // Formula: top = componentY - popupHeight (popup bottom touches trigger top exactly)
-    debugLog('🟢 POPUP_MODULE_V16_LOADED - capturing position in onPress callback before setState');
 
     // Imperative handle for parent component access
     useImperativeHandle(
@@ -1341,29 +1331,29 @@ const AutoPositionedPopup = memo(
         );
       }, [
         tag,
-        // �?CRITICAL FIX: Remove all props that may change frequently or are inline functions
+        // ⚠CRITICAL FIX: Remove all props that may change frequently or are inline functions
         // Changes to these props should not cause the entire component tree to recreate, especially TextInput
-        // fetchData,  // �?Removed: inline function
-        // renderItem,  // �?Removed: possibly inline function
-        // onItemSelected,  // �?Removed: possibly inline function
-        // onSubmitEditing,  // �?Removed: possibly inline function
+        // fetchData,  // ❌Removed: inline function
+        // renderItem,  // ❌Removed: possibly inline function
+        // onItemSelected,  // ❌Removed: possibly inline function
+        // onSubmitEditing,  // ❌Removed: possibly inline function
         localSearch,
-        // placeholder,  // �?Removed: may change
-        // textAlign,  // �?Removed: may change
+        // placeholder,  // ❌Removed: may change
+        // textAlign,  // ❌Removed: may change
         pageSize,
         selectedItem,
-        // CustomRow,  // �?Removed: inline function, new reference each time
+        // CustomRow,  // ❌Removed: inline function, new reference each time
         useTextInput,
-        // btwChildren,  // �?Removed: inline function
-        // keyExtractor,  // �?Removed: possibly inline function
-        // AutoPositionedPopupBtnStyle,  // �?Removed: possibly inline object
-        // CustomPopView,  // �?Removed: may change
-        // CustomPopViewStyle,  // �?Removed: may change
+        // btwChildren,  // ❌Removed: inline function
+        // keyExtractor,  // ❌Removed: possibly inline function
+        // AutoPositionedPopupBtnStyle,  // ❌Removed: possibly inline object
+        // CustomPopView,  // ❌Removed: may change
+        // CustomPopViewStyle,  // ❌Removed: may change
         forceRemoveAllRootViewOnItemSelected,
         state.isFocus,
         showListEmptyComponent,
         emptyText,
-        // �?Removed most dependencies that may cause re-rendering, keeping only core dependencies that truly affect component structure
+        // ⚠Removed most dependencies that may cause re-rendering, keeping only core dependencies that truly affect component structure
         // This prevents TextInput recreation due to inline functions/objects during parent component redraws
       ]);
     }
