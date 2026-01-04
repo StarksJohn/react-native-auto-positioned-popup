@@ -106,6 +106,16 @@ function replaceConsoleLogInFile(filePath) {
     return 0;
   }
 
+  // Check if file has a LOCAL debugLog definition (not imported)
+  // This handles files that define their own debugLog function for custom debug control
+  const hasLocalDebugLog = /(?:const|let|var|function)\s+debugLog\s*[=(]/.test(content);
+
+  if (hasLocalDebugLog) {
+    // File has its own debugLog implementation, skip processing to avoid duplicate declaration
+    console.log(`${colors.yellow}  Skipping ${fileName}: has local debugLog definition${colors.reset}`);
+    return 0;
+  }
+
   // Check if debugLog import already exists
   const hasDebugLogImport = content.includes("import { debugLog") ||
                             content.includes("import {debugLog") ||
