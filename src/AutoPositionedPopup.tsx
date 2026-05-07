@@ -283,7 +283,7 @@ const AutoPositionedPopupList: React.FC<AutoPositionedPopupListProps> = memo(
         <View style={[styles.baseModalView, styles.autoPositionedPopupList, { backgroundColor: themeMode === 'light' ? '#fff' : 'rgba(44, 44, 46, 1)', }]}>
           {internalSearchTextInput}
           <AdvancedFlatList
-            style={[{ borderRadius: 0 }, internalSearchTextInput && { flex: 1 }]}
+            style={[{ borderRadius: 0 }, internalSearchTextInput ? { flex: 1 } : undefined]}
             {...(ref_list && { ref: ref_list })}
             keyExtractor={(item, index) => keyExtractor ? keyExtractor(item as SelectedItem) : (item as SelectedItem).id}
             keyboardShouldPersistTaps={'always'}
