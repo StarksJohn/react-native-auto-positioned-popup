@@ -1,8 +1,8 @@
-import React, {RefObject} from 'react';
-import {StyleProp, TextInputProps, TextStyle, ViewStyle} from 'react-native';
-import {TextInputSubmitEditingEventData} from 'react-native/Libraries/Components/TextInput/TextInput';
-import {NativeSyntheticEvent} from 'react-native/Libraries/Types/CoreEventTypes';
-import {KeyboardAwareScrollView} from 'react-native-keyboard-aware-scroll-view';
+import React, { RefObject } from 'react';
+import { StyleProp, TextInputProps, TextStyle, ViewStyle } from 'react-native';
+import { TextInputSubmitEditingEventData } from 'react-native/Libraries/Components/TextInput/TextInput';
+import { NativeSyntheticEvent } from 'react-native/Libraries/Types/CoreEventTypes';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
 export interface SelectedItem {
   id: string;
@@ -22,7 +22,7 @@ export interface Data {
 export interface RNAutoPositionedPopupCustomRowProps {
   children?: React.ReactNode;
   selectedItem?: SelectedItem | any | null | undefined;
-  selectList?: string | any [];
+  selectList?: string | any[];
   onAdded?: (textToAdd: string) => void;
   clearSelectedItem?: () => void;
   disabled?: boolean;
@@ -64,15 +64,15 @@ export interface AutoPositionedPopupProps {
    * @param searchQuery
    */
   fetchData?: ({
-                 pageIndex,
-                 pageSize,
-                 searchQuery,
-               }: {
+    pageIndex,
+    pageSize,
+    searchQuery,
+  }: {
     pageIndex: number;
     pageSize: number;
     searchQuery?: string;
   }) => Promise<Data | null>;
-  renderItem?: ({item, index}: { item: SelectedItem; index: number }) => React.ReactElement;
+  renderItem?: ({ item, index }: { item: SelectedItem; index: number }) => React.ReactElement;
   onItemSelected?: (item: SelectedItem & any) => void;
   /**
    * onSubmitEditing={(e: NativeSyntheticEvent<TextInputSubmitEditingEventData>) => {
@@ -157,9 +157,9 @@ export interface AutoPositionedPopupProps {
    */
   CustomPopView?: () => React.ComponentType<
     ViewStyle & {
-    children?: React.ReactNode;
-    selectedItem?: SelectedItem | any;
-  }
+      children?: React.ReactNode;
+      selectedItem?: SelectedItem | any;
+    }
   >;
   CustomPopViewStyle?: ViewStyle;
   forceRemoveAllRootViewOnItemSelected?: boolean;
@@ -210,4 +210,6 @@ export interface AutoPositionedPopupProps {
    * Default: 100
    */
   scrollExtraHeight?: number;
+  // 是否在 AutoPositionedPopupList 组件内部就行搜索
+  internalSearch?: boolean;
 }

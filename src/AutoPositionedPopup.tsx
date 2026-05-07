@@ -3,7 +3,7 @@
 // Wait 1 second for KeyboardAwareScrollView to stabilize, then use measureInWindow to get trigger's FINAL position
 // NOTE: Parent component (KeyboardAwareScrollView) is responsible for scrolling trigger into view
 // DEBUG FLAG: Set to false to disable all console logs for better performance
-const POPUP_DEBUG = false; // DISABLED: Too many logs cause app freeze
+const POPUP_DEBUG = global.$fake; // DISABLED: Too many logs cause app freeze
 const POPUP_POSITION_DEBUG = true; // Only log positioning calculations
 const debugLog = (...args: any[]) => {
   if (POPUP_DEBUG) {
@@ -159,6 +159,7 @@ interface AutoPositionedPopupListProps {
   showListEmptyComponent?: boolean;
   emptyText?: string;
   themeMode?: string | null | undefined;
+  internalSearchTextInput?: React.ReactNode;
 }
 
 const AutoPositionedPopupList: React.FC<AutoPositionedPopupListProps> = memo(
@@ -170,7 +171,7 @@ const AutoPositionedPopupList: React.FC<AutoPositionedPopupListProps> = memo(
      renderItem,
      selectedItem,
      localSearch,
-     pageSize, showListEmptyComponent, emptyText, themeMode
+     pageSize, showListEmptyComponent, emptyText, themeMode, internalSearchTextInput
    }: AutoPositionedPopupListProps): React.JSX.Element => {
     const [state, setState] = useState<{
       selectedItem?: SelectedItem;
@@ -278,8 +279,9 @@ const AutoPositionedPopupList: React.FC<AutoPositionedPopupListProps> = memo(
       // No need for conditional import here
       return (
         <View style={[styles.baseModalView, styles.autoPositionedPopupList, {backgroundColor: themeMode === 'light' ? '#fff' : 'rgba(44, 44, 46, 1)',}]}>
+          {internalSearchTextInput}
           <AdvancedFlatList
-            style={[{borderRadius: 0}]}
+            style={[{borderRadius: 0}, internalSearchTextInput && {flex: 1}]}
             {...(ref_list && {ref: ref_list})}
             keyExtractor={(item, index) => keyExtractor ? keyExtractor(item as SelectedItem) : (item as SelectedItem).id}
             keyboardShouldPersistTaps={'always'}
@@ -300,7 +302,7 @@ const AutoPositionedPopupList: React.FC<AutoPositionedPopupListProps> = memo(
       searchQuery,
       localSearch,
       pageSize,
-      rootViewsRef, showListEmptyComponent, emptyText, themeMode
+      rootViewsRef, showListEmptyComponent, emptyText, themeMode, internalSearchTextInput
     ]);
   }
 );
@@ -314,6 +316,12 @@ interface StateProps {
 // List layout constants
 const listLayout = {
   height: 200,
+};
+const internalSearchListLayout = {
+  height: 300,
+};
+const internalSearchInputLayout = {
+  height: 50,
 };
 
 // Main AutoPositionedPopup component
@@ -370,7 +378,7 @@ const AutoPositionedPopup = memo(
         selectedItemBackgroundColor = 'rgba(116, 116, 128, 0.08)',
         // textAlign = 'right',
         CustomPopView = undefined, CustomPopViewStyle, showListEmptyComponent = true, emptyText = '', onChangeText, themeMode = 'light',
-        parentScrollViewRef, scrollExtraHeight = 100,
+        parentScrollViewRef, scrollExtraHeight = 100, internalSearch=false,
       } = props;
       // State management similar to project implementation
       const [state, setState] = useState<StateProps>({
@@ -867,16 +875,71 @@ const AutoPositionedPopup = memo(
           // User request: "只要传入的 useTextInput 是 false, 弹框都显示在屏幕中间"
           // This avoids all complex positioning calculations that kept failing
           if (state.isFocus) {
+            if (internalSearch && isKeyboardFullyShown && hasAddedRootView.current) {
+              return;
+            }
             if (isKeyboardFullyShown) {
               Keyboard.dismiss();
               return;
             }
 
+            if (internalSearch) {
+              if (hasAddedRootView.current) {
+                return;
+              }
+              hasAddedRootView.current = true;
+              hasShownRootView.current = true;
+              const internalSearchPopupTop = (Platform.OS === 'android' ? StatusBar.currentHeight || 0 : 0) + 52;
+              const internalSearchPopupHeight = internalSearchListLayout.height + internalSearchInputLayout.height;
+              debugLog('AutoPositionedPopup internalSearch useTextInput=false, showing popup below top navigation', {
+                tag,
+                internalSearchPopupTop,
+                internalSearchPopupHeight,
+              });
+              addRootView({
+                id: tag,
+                style: {
+                  top: internalSearchPopupTop,
+                  left: popUpViewStyle?.left,
+                  width: popUpViewStyle?.width,
+                  height: internalSearchPopupHeight,
+                  opacity: 1,
+                },
+                component: (
+                  <AutoPositionedPopupList
+                    tag={tag}
+                    updateState={updateState}
+                    fetchData={fetchData}
+                    pageSize={pageSize}
+                    renderItem={renderItem}
+                    selectedItem={state.selectedItem}
+                    localSearch={localSearch}
+                    showListEmptyComponent={showListEmptyComponent}
+                    emptyText={emptyText}
+                    themeMode={themeMode}
+                    internalSearchTextInput={internalSearchMemoizedTextInput}
+                  />
+                ),
+                useModal: true,
+                onModalClose: () => {
+                  debugLog('AutoPositionedPopup internalSearch onModalClose tag=', tag);
+                  removeRootView(tag, forceRemoveAllRootViewOnItemSelected, rootViewsRef.current);
+                  hasAddedRootView.current = false;
+                  hasShownRootView.current = false;
+                  hasTriggeredFocus.current = false;
+                  ref_isFocus.current = false;
+                  setState((prevState) => ({...prevState}));
+                  setSearchQuery('');
+                },
+              });
+              return;
+            }
+
             debugLog('🟢🟢🟢 POPUP_V17 useTextInput=false, showing popup in CENTER of screen');
 
-            const actualPopupHeight = CustomPopView && CustomPopViewStyle && typeof CustomPopViewStyle.height === 'number'
-              ? CustomPopViewStyle.height
-              : listLayout.height;
+            // const actualPopupHeight = CustomPopView && CustomPopViewStyle && typeof CustomPopViewStyle.height === 'number'
+            //   ? CustomPopViewStyle.height
+            //   : listLayout.height;
 
             if (CustomPopView && CustomPopViewStyle) {
               const PopViewComponent = CustomPopView();
@@ -927,7 +990,7 @@ const AutoPositionedPopup = memo(
       forceRemoveAllRootViewOnItemSelected,
       tag, TextInputProps,
       state.selectedItem, showListEmptyComponent, themeMode
-    ]);
+      ]);
 
     // V18: All positioning logic is now in the useEffect above
     // V18 FIX (2025-01-04): Wait 1000ms after keyboard appears before measuring position
@@ -1204,6 +1267,106 @@ const AutoPositionedPopup = memo(
         // No longer use original inputStyle and TextInputProps, use stable references instead
         // Stable references only update when deep comparison detects actual content changes, avoiding frequent TextInput recreation during parent component redraws
       ]);
+      const internalSearchMemoizedTextInput = useMemo(() => {
+        debugLog('AutoPositionedPopup internalSearchMemoizedTextInput=', {tag, internalSearch, 'state.isFocus': state.isFocus, stableTextInputProps});
+        if (!internalSearch || !state.isFocus) {
+          return null;
+        }
+        return (
+          <RNTextInput
+            ref={(ref) => {
+              if (ref && !textInputRef.current) {
+                debugLog(`AutoPositionedPopup internalSearch TextInput created/mounted - tag: ${tag}, ref:`, ref);
+              } else if (!ref && textInputRef.current) {
+                debugLog(`AutoPositionedPopup internalSearch TextInput unmounted - tag: ${tag}`);
+              } else if (ref && textInputRef.current && ref !== textInputRef.current) {
+                debugLog(`AutoPositionedPopup internalSearch TextInput replaced - tag: ${tag}, oldRef:`, textInputRef.current, 'newRef:', ref);
+              }
+              textInputRef.current = ref;
+            }}
+            key={`internal-search-textinput-${tag}`}
+            style={[
+              styles.inputStyle,
+              stableInputStyle,
+              {
+                flex: 0,
+                height: internalSearchInputLayout.height,
+                width: '100%',
+                paddingHorizontal: 12,
+              },
+              (themeMode === 'dark' && {color: '#fff'}),
+            ]}
+            textAlign={stableTextInputProps && stableTextInputProps['textAlign'] || 'left'}
+            multiline={stableTextInputProps && stableTextInputProps['multiline'] || false}
+            numberOfLines={stableTextInputProps && stableTextInputProps['numberOfLines'] || 1}
+            onChangeText={(searchQuery) => {
+              ref_searchQuery.current = searchQuery;
+              debugLog('AutoPositionedPopup internalSearch onChangeText rootViews=', rootViews);
+              if (!localSearch) {
+                if (debounceTimerRef.current) {
+                  clearTimeout(debounceTimerRef.current);
+                }
+                debounceTimerRef.current = setTimeout(() => {
+                  emitQueryChange(ref_searchQuery.current);
+                  if (!internalSearch) {
+                    onChangeText && onChangeText(ref_searchQuery.current);
+                  }
+                }, 500);
+              } else {
+                emitQueryChange(ref_searchQuery.current);
+                if (!internalSearch) {
+                  onChangeText && onChangeText(ref_searchQuery.current);
+                }
+              }
+            }}
+            placeholderTextColor={stableTextInputProps && stableTextInputProps['placeholderTextColor'] || theme.colors.placeholderText}
+            placeholder={placeholder}
+            onKeyPress={(e) => {
+              if (e.nativeEvent.key === 'Enter') {
+                Keyboard.dismiss();
+              }
+            }}
+            keyboardType={stableTextInputProps && stableTextInputProps['keyboardType'] || 'default'}
+            clearButtonMode="while-editing"
+            returnKeyType={stableTextInputProps && stableTextInputProps['returnKeyType'] || 'done'}
+            maxLength={stableTextInputProps && stableTextInputProps['maxLength'] || 100}
+            accessibilityLabel="selectInput"
+            accessible={true}
+            autoFocus={stableTextInputProps && stableTextInputProps['autoFocus'] || true}
+            autoCorrect={false}
+            underlineColorAndroid="transparent"
+            editable={stableTextInputProps && stableTextInputProps['editable'] || true}
+            secureTextEntry={stableTextInputProps && stableTextInputProps['secureTextEntry'] || false}
+            defaultValue=""
+            caretHidden={false}
+            enablesReturnKeyAutomatically
+            onFocus={handleTextInputFocus}
+            onBlur={handleTextInputBlur}
+            selectTextOnFocus={stableTextInputProps && stableTextInputProps['selectTextOnFocus'] || false}
+            onSubmitEditing={(e: NativeSyntheticEvent<TextInputSubmitEditingEventData>) => {
+              debugLog(
+                'AutoPositionedPopup.tsx internalSearch onSubmitEditing e.nativeEvent.text=',
+                e.nativeEvent.text
+              );
+              onSubmitEditing && onSubmitEditing(e);
+            }}
+          />
+        );
+      }, [
+        tag,
+        internalSearch,
+        state.isFocus,
+        handleTextInputFocus,
+        handleTextInputBlur,
+        stableInputStyle,
+        stableTextInputProps,
+        placeholder,
+        onSubmitEditing,
+        localSearch,
+        onChangeText,
+        rootViews,
+        themeMode,
+      ]);
 
       // Render the component following project implementation
       return useMemo(() => {
@@ -1352,7 +1515,7 @@ const AutoPositionedPopup = memo(
         forceRemoveAllRootViewOnItemSelected,
         state.isFocus,
         showListEmptyComponent,
-        emptyText,
+        emptyText, internalSearch
         // ⚠Removed most dependencies that may cause re-rendering, keeping only core dependencies that truly affect component structure
         // This prevents TextInput recreation due to inline functions/objects during parent component redraws
       ]);
