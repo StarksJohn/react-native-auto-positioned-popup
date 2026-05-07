@@ -45,13 +45,13 @@ import {
   UIManager,
   View,
 } from 'react-native';
-import {AdvancedFlatList, ListData, FetchDataParams} from 'react-native-advanced-flatlist';
-import {TextInputSubmitEditingEventData} from 'react-native/Libraries/Components/TextInput/TextInput';
-import {LayoutRectangle, NativeSyntheticEvent} from 'react-native/Libraries/Types/CoreEventTypes';
-import {AutoPositionedPopupProps, Data, SelectedItem} from './AutoPositionedPopupProps';
+import { AdvancedFlatList, ListData, FetchDataParams } from 'react-native-advanced-flatlist';
+import { TextInputSubmitEditingEventData } from 'react-native/Libraries/Components/TextInput/TextInput';
+import { LayoutRectangle, NativeSyntheticEvent } from 'react-native/Libraries/Types/CoreEventTypes';
+import { AutoPositionedPopupProps, Data, SelectedItem } from './AutoPositionedPopupProps';
 import styles from './AutoPositionedPopup.style';
-import {useRootView} from './RootViewContext';
-import {useKeyboardStatus} from './KeyboardManager';
+import { useRootView } from './RootViewContext';
+import { useKeyboardStatus } from './KeyboardManager';
 
 // Lightweight emitter to decouple TextInput and list without re-rendering context
 type QueryListener = (query: string) => void;
@@ -97,18 +97,18 @@ const ListItem: React.FC<{
   themeMode?: string | null | undefined;
 }> = memo(
   ({
-     updateState,
-     item,
-     index,
-     selectedItem, themeMode
-   }: {
+    updateState,
+    item,
+    index,
+    selectedItem, themeMode
+  }: {
     updateState: (key: string, value: SelectedItem) => void;
     item: SelectedItem;
     index: number;
     selectedItem?: SelectedItem;
     themeMode?: string | null | undefined;
   }): React.JSX.Element => {
-    const {addRootView, setRootViewNativeStyle, removeRootView, rootViews} = useRootView();
+    const { addRootView, setRootViewNativeStyle, removeRootView, rootViews } = useRootView();
     const rootViewsRef = useRef(rootViews);
     useEffect(() => {
       rootViewsRef.current = rootViews;
@@ -121,7 +121,7 @@ const ListItem: React.FC<{
           key={item.id}
           style={[
             styles.commonModalRow,
-            {backgroundColor: isSelected ? (themeMode === 'light' ? 'rgba(116, 116, 128, 0.08)' : 'rgba(120, 120, 128, 0.36)') : 'transparent'},
+            { backgroundColor: isSelected ? (themeMode === 'light' ? 'rgba(116, 116, 128, 0.08)' : 'rgba(120, 120, 128, 0.36)') : 'transparent' },
           ]}
           onPress={() => {
             // debugLog('AutoPositionedPopup.tsx ListItem onPress item=', item); // Commented to prevent spam
@@ -129,9 +129,11 @@ const ListItem: React.FC<{
             updateState('selectedItem', item);
           }}
         >
-          <Text style={(themeMode === 'light' ? styles.ListItemCode : {...styles.ListItemCode, color: '#fff'})} numberOfLines={1} ellipsizeMode="tail">
+          <Text style={(themeMode === 'light' ? styles.ListItemCode : { ...styles.ListItemCode, color: '#fff' })} numberOfLines={1} ellipsizeMode="tail">
             {item.title}
           </Text>
+          {/* 底部分割线 */}
+          {/* <View style={styles.bottomDivider} /> */}
         </TouchableOpacity>
       );
     }, [updateState, item, index, selectedItem, rootViewsRef, themeMode]);
@@ -143,16 +145,16 @@ interface AutoPositionedPopupListProps {
   tag: string;
   updateState: (key: string, value: any) => void;
   fetchData: ({
-                pageIndex,
-                pageSize,
-                searchQuery,
-              }: {
+    pageIndex,
+    pageSize,
+    searchQuery,
+  }: {
     pageIndex: number;
     pageSize: number;
     searchQuery?: string;
   }) => Promise<Data | null>;
   keyExtractor?: (item: SelectedItem) => string; //keyExtractor={item => item?.id}
-  renderItem?: ({item, index}: { item: SelectedItem; index: number }) => React.ReactElement;
+  renderItem?: ({ item, index }: { item: SelectedItem; index: number }) => React.ReactElement;
   selectedItem?: SelectedItem;
   localSearch?: boolean;
   pageSize?: number;
@@ -164,15 +166,15 @@ interface AutoPositionedPopupListProps {
 
 const AutoPositionedPopupList: React.FC<AutoPositionedPopupListProps> = memo(
   ({
-     tag,
-     updateState,
-     fetchData,
-     keyExtractor = (item) => String(item.id),
-     renderItem,
-     selectedItem,
-     localSearch,
-     pageSize, showListEmptyComponent, emptyText, themeMode, internalSearchTextInput
-   }: AutoPositionedPopupListProps): React.JSX.Element => {
+    tag,
+    updateState,
+    fetchData,
+    keyExtractor = (item) => String(item.id),
+    renderItem,
+    selectedItem,
+    localSearch,
+    pageSize, showListEmptyComponent, emptyText, themeMode, internalSearchTextInput
+  }: AutoPositionedPopupListProps): React.JSX.Element => {
     const [state, setState] = useState<{
       selectedItem?: SelectedItem;
       localData: SelectedItem[];
@@ -183,7 +185,7 @@ const AutoPositionedPopupList: React.FC<AutoPositionedPopupListProps> = memo(
     // Define an interface that matches the methods we need from CsxFlatList
     const ref_list = useRef<{ scrollToTop: () => void; refresh: () => void } | null>(null);
     const ref_searchQuery = useRef<string>('');
-    const {searchQuery, setSearchQuery, rootViews} = useRootView();
+    const { searchQuery, setSearchQuery, rootViews } = useRootView();
     const rootViewsRef = useRef(rootViews);
     useEffect(() => {
       rootViewsRef.current = rootViews;
@@ -222,10 +224,10 @@ const AutoPositionedPopupList: React.FC<AutoPositionedPopupListProps> = memo(
       updateState(key, value);
     };
     const _fetchData = async ({
-                                pageIndex,
-                                pageSize: currentPageSize,
-                              }: FetchDataParams): Promise<ListData | null> => {
-      debugLog('AutoPositionedPopupList _fetchData=', {pageIndex, pageSize: currentPageSize, 'state.localData': state.localData, 'ref_searchQuery.current': ref_searchQuery.current, localSearch});
+      pageIndex,
+      pageSize: currentPageSize,
+    }: FetchDataParams): Promise<ListData | null> => {
+      debugLog('AutoPositionedPopupList _fetchData=', { pageIndex, pageSize: currentPageSize, 'state.localData': state.localData, 'ref_searchQuery.current': ref_searchQuery.current, localSearch });
       if (localSearch && state.localData.length > 0) {
         const result: SelectedItem[] = state.localData.filter((item: SelectedItem) => {
           return `${item.title}`?.toLowerCase().includes(ref_searchQuery.current.toLowerCase());
@@ -268,7 +270,7 @@ const AutoPositionedPopupList: React.FC<AutoPositionedPopupListProps> = memo(
       return null;
     };
     const _renderItem = useCallback(
-      ({item, index}: { item: SelectedItem; index: number }) => {
+      ({ item, index }: { item: SelectedItem; index: number }) => {
         return <ListItem item={item} index={index} updateState={_updateState} selectedItem={state.selectedItem} themeMode={themeMode} />;
       },
       [state.selectedItem, themeMode]
@@ -278,15 +280,15 @@ const AutoPositionedPopupList: React.FC<AutoPositionedPopupListProps> = memo(
       // Babel configuration handles the path redirection based on global.$fake
       // No need for conditional import here
       return (
-        <View style={[styles.baseModalView, styles.autoPositionedPopupList, {backgroundColor: themeMode === 'light' ? '#fff' : 'rgba(44, 44, 46, 1)',}]}>
+        <View style={[styles.baseModalView, styles.autoPositionedPopupList, { backgroundColor: themeMode === 'light' ? '#fff' : 'rgba(44, 44, 46, 1)', }]}>
           {internalSearchTextInput}
           <AdvancedFlatList
-            style={[{borderRadius: 0}, internalSearchTextInput && {flex: 1}]}
-            {...(ref_list && {ref: ref_list})}
+            style={[{ borderRadius: 0 }, internalSearchTextInput && { flex: 1 }]}
+            {...(ref_list && { ref: ref_list })}
             keyExtractor={(item, index) => keyExtractor ? keyExtractor(item as SelectedItem) : (item as SelectedItem).id}
             keyboardShouldPersistTaps={'always'}
             fetchData={_fetchData}
-            renderItem={renderItem ? ({item, index}) => renderItem({item: item as SelectedItem, index}) : ({item, index}) => _renderItem({item: item as SelectedItem, index})}
+            renderItem={renderItem ? ({ item, index }) => renderItem({ item: item as SelectedItem, index }) : ({ item, index }) => _renderItem({ item: item as SelectedItem, index })}
             showListEmptyComponent={showListEmptyComponent}
             emptyText={emptyText}
           />
@@ -338,12 +340,12 @@ const AutoPositionedPopup = memo(
         TextInputProps,//= {autoFocus: true},
         inputStyle,
         labelStyle,
-        popUpViewStyle = {left: '5%', width: '90%'},
+        popUpViewStyle = { left: '5%', width: '90%' },
         fetchData = async ({
-                             pageIndex,
-                             pageSize,
-                             searchQuery,
-                           }: {
+          pageIndex,
+          pageSize,
+          searchQuery,
+        }: {
           pageIndex: number;
           pageSize: number;
           searchQuery?: string;
@@ -370,7 +372,7 @@ const AutoPositionedPopup = memo(
         selectedItem,
         useTextInput = false,
         btwChildren,
-        CustomRow = ({children}) => <View>{children}</View>,
+        CustomRow = ({ children }) => <View>{children}</View>,
         keyExtractor = (item: any) => String(item?.id || ''),
         AutoPositionedPopupBtnDisabled = false,
         forceRemoveAllRootViewOnItemSelected = false,
@@ -378,7 +380,7 @@ const AutoPositionedPopup = memo(
         selectedItemBackgroundColor = 'rgba(116, 116, 128, 0.08)',
         // textAlign = 'right',
         CustomPopView = undefined, CustomPopViewStyle, showListEmptyComponent = true, emptyText = '', onChangeText, themeMode = 'light',
-        parentScrollViewRef, scrollExtraHeight = 100, internalSearch=false,
+        parentScrollViewRef, scrollExtraHeight = 100, internalSearch = false,
       } = props;
       // State management similar to project implementation
       const [state, setState] = useState<StateProps>({
@@ -386,7 +388,7 @@ const AutoPositionedPopup = memo(
         selectedItem: selectedItem,
       });
       // Use RootView context
-      const {addRootView, setRootViewNativeStyle, updateRootView, removeRootView, rootViews, setSearchQuery} = useRootView();
+      const { addRootView, setRootViewNativeStyle, updateRootView, removeRootView, rootViews, setSearchQuery } = useRootView();
       const rootViewsRef = useRef(rootViews);
       // Track TextInput focus and RootView states like project implementation
       const hasTriggeredFocus = useRef(false);
@@ -399,7 +401,7 @@ const AutoPositionedPopup = memo(
       const refAutoPositionedPopup = useRef<View>(null);
       const ref_searchQuery = useRef<string>('');
       // Store trigger button position when clicked (before it's replaced by TextInput)
-      const triggerPositionRef = useRef<{x: number; y: number; width: number; height: number} | null>(null);
+      const triggerPositionRef = useRef<{ x: number; y: number; width: number; height: number } | null>(null);
       // V19: Track keyboard height for accurate popup positioning
       const keyboardHeightRef = useRef<number>(0);
       // Add ref to track previous keyboard state to avoid false triggers during parent component re-renders
@@ -425,7 +427,7 @@ const AutoPositionedPopup = memo(
         top: number;
         left: number;
         width: number;
-      }>({top: 0, left: 0, width: 0});
+      }>({ top: 0, left: 0, width: 0 });
       // Refs for performance optimization
       const containerRef = useRef<View>(null);
       const textInputRef = useRef<RNTextInput>(null);
@@ -588,7 +590,7 @@ const AutoPositionedPopup = memo(
       useEffect(() => {
         (async () => {
         })();
-        debugLog(`AutoPositionedPopup componentDidMount=`, {tag, CustomPopView});
+        debugLog(`AutoPositionedPopup componentDidMount=`, { tag, CustomPopView });
         //componentWillUnmount
         return () => {
           debugLog(`AutoPositionedPopup componentWillUnmount tag=`, tag);
@@ -604,7 +606,7 @@ const AutoPositionedPopup = memo(
         };
       }, []);
       useEffect(() => {
-        debugLog('AutoPositionedPopup rootViews=', {tag, rootViews});
+        debugLog('AutoPositionedPopup rootViews=', { tag, rootViews });
         rootViewsRef.current = rootViews;
         if (rootViews.length === 0) {
           hasAddedRootView.current = false;
@@ -621,7 +623,7 @@ const AutoPositionedPopup = memo(
         }
       }, [rootViews]);
       useEffect(() => {
-        debugLog('AutoPositionedPopup useEffect [selectedItem, state.selectedItem, tag]=', {tag, selectedItem, 'state.selectedItem': state.selectedItem});
+        debugLog('AutoPositionedPopup useEffect [selectedItem, state.selectedItem, tag]=', { tag, selectedItem, 'state.selectedItem': state.selectedItem });
         debugLog('AutoPositionedPopup useEffect state.selectedItem=', state.selectedItem);
         if (state.selectedItem?.id !== selectedItem?.id || state.selectedItem?.title != selectedItem?.title) {
           debugLog('AutoPositionedPopup useEffect selectedItem!=state.selectedItem');
@@ -690,8 +692,8 @@ const AutoPositionedPopup = memo(
             return StatusBar.currentHeight || 24; // Fallback to 24 if undefined
           } else {
             // iOS: Calculate from screen vs window height difference
-            const {height: screenHeightFull} = Dimensions.get('screen');
-            const {height: windowHeight} = Dimensions.get('window');
+            const { height: screenHeightFull } = Dimensions.get('screen');
+            const { height: windowHeight } = Dimensions.get('window');
             return screenHeightFull - windowHeight; // Safe area top (status bar)
           }
         };
@@ -751,10 +753,10 @@ const AutoPositionedPopup = memo(
                 // Measure BOTH refs for comparison
                 if (textInputRef.current && refAutoPositionedPopup.current) {
                   textInputRef.current.measureInWindow((tx: number | undefined, ty: number | undefined, tw: number | undefined, th: number | undefined) => {
-                    debugLog('AutoPositionedPopup DEBUG: textInputRef position=', {x: tx, y: ty, width: tw, height: th});
+                    debugLog('AutoPositionedPopup DEBUG: textInputRef position=', { x: tx, y: ty, width: tw, height: th });
                   });
                   refAutoPositionedPopup.current.measureInWindow((rx: number | undefined, ry: number | undefined, rw: number | undefined, rh: number | undefined) => {
-                    debugLog('AutoPositionedPopup DEBUG: refAutoPositionedPopup position=', {x: rx, y: ry, width: rw, height: rh});
+                    debugLog('AutoPositionedPopup DEBUG: refAutoPositionedPopup position=', { x: rx, y: ry, width: rw, height: rh });
                   });
                 }
 
@@ -769,7 +771,7 @@ const AutoPositionedPopup = memo(
                   const screenHeightFallback = Dimensions.get('window').height;
                   const screenWidthFallback = Dimensions.get('window').width;
                   const fallbackY = (screenHeightFallback - listLayout.height) / 2;
-                  ref_listPos.current = {x: screenWidthFallback * 0.05, y: fallbackY, width: screenWidthFallback * 0.9};
+                  ref_listPos.current = { x: screenWidthFallback * 0.05, y: fallbackY, width: screenWidthFallback * 0.9 };
                   updateRootView(tag, {
                     style: {
                       top: ref_listPos.current?.y,
@@ -845,7 +847,7 @@ const AutoPositionedPopup = memo(
                   positionDebugLog(`V19f_RESULT: position=${position} popupY=${popupY} popupBottom=${popupBottom}`);
                   positionDebugLog(`V19f_GAP: trigger_top=${triggerTop} - popup_bottom=${popupBottom} = gap=${gapPixels}px`);
 
-                  ref_listPos.current = {x, y: popupY, width};
+                  ref_listPos.current = { x, y: popupY, width };
                   updateRootView(tag, {
                     style: { top: popupY, left: popUpViewStyle?.left, width: popUpViewStyle?.width, height: listLayout.height, opacity: 1 }
                   });
@@ -857,7 +859,7 @@ const AutoPositionedPopup = memo(
             // Only execute close logic when keyboard state actually changes from true to false
             debugLog(
               'AutoPositionedPopup isKeyboardFullyShown useEffect removeRootView (keyboard state changed)=',
-              {tag, forceRemoveAllRootViewOnItemSelected, keyboardStateChanged}
+              { tag, forceRemoveAllRootViewOnItemSelected, keyboardStateChanged }
             );
             removeRootView(tag, forceRemoveAllRootViewOnItemSelected);
             setState((prevState) => {
@@ -928,7 +930,7 @@ const AutoPositionedPopup = memo(
                   hasShownRootView.current = false;
                   hasTriggeredFocus.current = false;
                   ref_isFocus.current = false;
-                  setState((prevState) => ({...prevState}));
+                  setState((prevState) => ({ ...prevState }));
                   setSearchQuery('');
                 },
               });
@@ -983,22 +985,22 @@ const AutoPositionedPopup = memo(
           }
         }
       }, [isKeyboardFullyShown,
-      state.isFocus,
-      useTextInput,
-      CustomPopView,
-      CustomPopViewStyle,
-      forceRemoveAllRootViewOnItemSelected,
-      tag, TextInputProps,
-      state.selectedItem, showListEmptyComponent, themeMode
+        state.isFocus,
+        useTextInput,
+        CustomPopView,
+        CustomPopViewStyle,
+        forceRemoveAllRootViewOnItemSelected,
+        tag, TextInputProps,
+        state.selectedItem, showListEmptyComponent, themeMode
       ]);
 
-    // V18: All positioning logic is now in the useEffect above
-    // V18 FIX (2025-01-04): Wait 1000ms after keyboard appears before measuring position
-    // This ensures trigger position is stable after KeyboardAwareScrollView scrolls
-    // Formula: top = componentY - popupHeight (popup bottom touches trigger top exactly)
+      // V18: All positioning logic is now in the useEffect above
+      // V18 FIX (2025-01-04): Wait 1000ms after keyboard appears before measuring position
+      // This ensures trigger position is stable after KeyboardAwareScrollView scrolls
+      // Formula: top = componentY - popupHeight (popup bottom touches trigger top exactly)
 
-    // Imperative handle for parent component access
-    useImperativeHandle(
+      // Imperative handle for parent component access
+      useImperativeHandle(
         parentRef,
         () => ({
           clearSelectedItem: () => {
@@ -1017,14 +1019,14 @@ const AutoPositionedPopup = memo(
             removeRootView(tag, forceRemoveAllRootViewOnItemSelected);
             setSearchQuery('');
             if (textInputRef.current) {
-              textInputRef.current.setNativeProps({text: ''});
+              textInputRef.current.setNativeProps({ text: '' });
             }
           },
         }),
         []
       );
       const updateState = (key: string, value: SelectedItem) => {
-        debugLog('AutoPositionedPopup updateState=', {key, value});
+        debugLog('AutoPositionedPopup updateState=', { key, value });
         setState((prevState) => ({
           ...prevState,
           [key]: value,
@@ -1066,7 +1068,7 @@ const AutoPositionedPopup = memo(
       // Only update when deep comparison detects real changes to avoid TextInput recreation due to reference changes during parent component redraws
       const stableInputStyle = useMemo(() => {
         if (!shallowEqual(stableInputStyleRef.current, inputStyle)) {
-          debugLog(`AutoPositionedPopup stableInputStyle: `, {tag, inputStyle, themeMode});
+          debugLog(`AutoPositionedPopup stableInputStyle: `, { tag, inputStyle, themeMode });
           stableInputStyleRef.current = inputStyle;
         }
         return stableInputStyleRef.current;
@@ -1077,7 +1079,7 @@ const AutoPositionedPopup = memo(
           debugLog(`AutoPositionedPopup TextInputProps deep change detected, updating stable reference - tag: ${tag}`);
           stableTextInputPropsRef.current = TextInputProps;
         }
-        debugLog('AutoPositionedPopup stableTextInputProps=', {tag, TextInputProps, 'stableTextInputPropsRef.current': stableTextInputPropsRef.current})
+        debugLog('AutoPositionedPopup stableTextInputProps=', { tag, TextInputProps, 'stableTextInputPropsRef.current': stableTextInputPropsRef.current })
         return stableTextInputPropsRef.current;
       }, [TextInputProps, tag]);
 
@@ -1169,7 +1171,7 @@ const AutoPositionedPopup = memo(
         removeRootView(tag, forceRemoveAllRootViewOnItemSelected);
         setSearchQuery('');
         if (textInputRef.current) {
-          textInputRef.current.setNativeProps({text: ''});
+          textInputRef.current.setNativeProps({ text: '' });
           ref_searchQuery.current = '';
           // Remove textInputRef.current.blur() - avoid forcing blur causing keyboard to close
         }
@@ -1179,7 +1181,7 @@ const AutoPositionedPopup = memo(
       // Wrap TextInput independently in useMemo to recreate only when key props change
       // This avoids repeated ref callback triggers due to other props changes during parent component redraws
       const memoizedTextInput = useMemo(() => {
-        debugLog('AutoPositionedPopup memoizedTextInput=', {tag, useTextInput, 'state.isFocus': state.isFocus, stableTextInputProps});
+        debugLog('AutoPositionedPopup memoizedTextInput=', { tag, useTextInput, 'state.isFocus': state.isFocus, stableTextInputProps });
         if (!useTextInput || !state.isFocus) {
           return null;
         }
@@ -1200,7 +1202,7 @@ const AutoPositionedPopup = memo(
             style={[
               styles.inputStyle,
               stableInputStyle,
-              (themeMode==='dark' && {color:'#fff'}),
+              (themeMode === 'dark' && { color: '#fff' }),
             ]}
             textAlign={stableTextInputProps && stableTextInputProps['textAlign'] || 'left'}
             multiline={stableTextInputProps && stableTextInputProps['multiline'] || false}
@@ -1268,7 +1270,7 @@ const AutoPositionedPopup = memo(
         // Stable references only update when deep comparison detects actual content changes, avoiding frequent TextInput recreation during parent component redraws
       ]);
       const internalSearchMemoizedTextInput = useMemo(() => {
-        debugLog('AutoPositionedPopup internalSearchMemoizedTextInput=', {tag, internalSearch, 'state.isFocus': state.isFocus, stableTextInputProps});
+        debugLog('AutoPositionedPopup internalSearchMemoizedTextInput=', { tag, internalSearch, 'state.isFocus': state.isFocus, stableTextInputProps });
         if (!internalSearch || !state.isFocus) {
           return null;
         }
@@ -1294,7 +1296,7 @@ const AutoPositionedPopup = memo(
                 width: '100%',
                 paddingHorizontal: 12,
               },
-              (themeMode === 'dark' && {color: '#fff'}),
+              (themeMode === 'dark' && { color: '#fff' }),
             ]}
             textAlign={stableTextInputProps && stableTextInputProps['textAlign'] || 'left'}
             multiline={stableTextInputProps && stableTextInputProps['multiline'] || false}
@@ -1396,9 +1398,9 @@ const AutoPositionedPopup = memo(
                     // IMPORTANT: Always capture position regardless of parentScrollViewRef
                     if (triggerBtnRef.current) {
                       triggerBtnRef.current.measureInWindow((x, y, width, height) => {
-                        debugLog('AutoPositionedPopup onPress: captured trigger position=', {tag, x, y, width, height});
+                        debugLog('AutoPositionedPopup onPress: captured trigger position=', { tag, x, y, width, height });
                         if (x !== undefined && y !== undefined && width !== undefined && height !== undefined) {
-                          triggerPositionRef.current = {x, y, width, height};
+                          triggerPositionRef.current = { x, y, width, height };
                         }
                       });
                     }
@@ -1474,7 +1476,7 @@ const AutoPositionedPopup = memo(
                     <Text
                       style={[
                         styles.searchQueryTxt,
-                        state.selectedItem && {color: theme.colors.text},
+                        state.selectedItem && { color: theme.colors.text },
                         labelStyle,
                       ]}
                       numberOfLines={1}

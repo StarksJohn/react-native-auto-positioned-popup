@@ -1,0 +1,76 @@
+---
+description: "Project context"
+alwaysApply: true
+---
+
+## Project Overview
+
+面向 React Native 的组件库：可自动根据屏幕空间调整位置的弹出层（dropdown / 自动补全 / 选择列表），内置防抖搜索、主题与样式定制。通过 RootView 上下文在应用根部挂载浮层，而非依赖 RN `Modal`。
+
+## Tech Stack
+
+- **语言**: TypeScript（`strict: true`，编译目标 `es2017`，`jsx: react-native`）
+- **运行时**: React Native 组件库；`peerDependencies`: `react >= 16.8.0`、`react-native >= 0.60.0`
+- **运行时依赖**: `react-native-advanced-flatlist`、`react-native-keyboard-aware-scroll-view`
+- **构建**: `typescript` 编译到 `lib/`，发布入口 `lib/index.js` 与类型 `lib/index.d.ts`
+- **质量**: ESLint 9 + `@typescript-eslint`（见 `.eslintrc.js`）
+
+## Development Commands
+
+| 命令 | 作用 |
+|------|------|
+| `npm run build` | 清理、`tsc -p tsconfig.build.json`，并执行 `scripts/strip-console-logs.js` |
+| `npm run watch` / `npm run dev` | `tsc --watch` |
+| `npm run clean` | 删除 `lib/` |
+| `npm run lint` / `npm run lint:fix` | 对 `src` 中 `.ts`/`.tsx` 运行 ESLint |
+| `npm run type-check` | `tsc --noEmit` |
+| `npm run prepare` | 安装时构建（`npm run build`） |
+| `npm run prepublishOnly` | 发布前构建 + lint |
+| `npm run pack-test` | `npm pack --dry-run` |
+| `npm run release:*` | 版本与发布相关脚本（含 `scripts/release.js`） |
+
+## Node/Runtime version
+
+- `package.json` → `engines.node`: `>= 14.0.0`
+- 仓库根目录无 `.nvmrc`
+
+## Directory Structure
+
+| 路径 | 用途 |
+|------|------|
+| `src/` | 源码：主组件、Props、样式、RootView、键盘相关、类型补充、常量 |
+| `lib/` | 编译输出（生成物，勿手改） |
+| `scripts/` | 构建后处理（如 strip console）、release 脚本 |
+| `README.md` / `README_zh.md` | 使用说明与中英文文档 |
+| `tsconfig.json` | 开发与类型检查基线 |
+| `tsconfig.build.json` | 发布构建（`outDir: lib`，声明文件与 sourceMap） |
+
+主要源文件：
+
+- `AutoPositionedPopup.tsx` — 主组件（forwardRef、定位、列表、搜索流程）
+- `AutoPositionedPopupProps.ts` — 对外 Props 与数据类型
+- `AutoPositionedPopup.style.ts` — `StyleSheet` 默认样式
+- `RootViewContext.tsx` — `RootViewProvider` / `useRootView`，浮层挂载
+- `KeyboardManager.tsx` — 键盘相关行为
+- `constants.ts` — 事件名等常量
+- `index.ts` — 包入口导出
+- `types/react-native-advanced-flatlist.d.ts` — 第三方类型补充
+
+## Architecture notes
+
+- **入口**: 消费者从 `lib/index.js`（或文档里 babel alias 到 `src`）导入 `AutoPositionedPopup`、`RootViewProvider`、类型与样式。
+- **状态与数据**: 选中项由 `selectedItem` / `onItemSelected` 等 props 驱动；远程/本地数据经 `fetchData` 等接口。
+- **弹层与定位**: 结合屏幕尺寸与 anchor 布局计算弹出位置；可选居中模式（如 README 中的 `centerDisplay` 等能力）。
+- **性能**: 列表侧使用 AdvancedFlatList；项目内强调 memo、debounce、与查询监听解耦以减少无用渲染。
+- **集成要求**: 宿主应用需包裹 `RootViewProvider`，popup 才能正确挂载到根视图栈。
+
+## Build/Deploy notes
+
+- 发布包 `files` 字段包含 `lib/`、`src/`、README、LICENSE 等。
+- `prepublishOnly` 会执行构建与 lint；本地改源码后需 `npm run build` 再发布或联调 compiled 包。
+
+## Code style or conventions
+
+- ESLint：`eslint:recommended`，`@typescript-eslint/parser`；TS 规则示例：`no-shadow` 为 error，`no-unused-vars` / `no-explicit-any` 为 warn；未使用 Prettier 配置文件（仓库内未发现）。
+- TypeScript：`strict` 开启；`noImplicitAny` 在基线 tsconfig 中为 false（保持与仓库一致）。
+- 样式：优先 `StyleSheet.create`，主题通过颜色/props 覆盖默认主题。

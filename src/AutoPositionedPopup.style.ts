@@ -1,6 +1,14 @@
 import { Platform, StyleSheet } from 'react-native';
 
 export default StyleSheet.create({
+  bottomDivider: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 1,
+    backgroundColor: '$dividerBackground',
+  },
   baseModalView: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
@@ -27,17 +35,18 @@ export default StyleSheet.create({
     fontSize: 15,
     lineHeight: 20,
     fontWeight: '600',
-    color: 'rgba(60, 60, 67, 0.6)',
+    color: '$text',
   },
   commonModalRow: {
     height: 32,
-    borderBottomWidth: 0,
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
     width: '100%',
     flexDirection: 'row',
     borderRadius: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(120, 120, 128, 0.2)',
   },
   autoPositionedPopupList: {
     // V11: Restore original layout - popup maintains fixed 200px height
