@@ -2,8 +2,157 @@
 
 本指南提供了手动和自动化两种方法来发布这个 React Native 组件到 npm，包括用于简化发布工作流程的高级自动化发布系统。
 
+## 本项目以后每次发布 NPM 新版本（先看这里）
+
+本项目已经验证过的稳定发布方式是：**本地构建验证 + `npm version` 升版本 + 使用 npm Granular Access Token 发布 + 只推当前版本 tag**。
+
+当前建议不要直接使用 `npm run release:patch-auto` 做“安静发布”，因为 `scripts/release.js` 的预检查会尝试把依赖更新到最新版本，可能带来计划外的 `package-lock.json` / 依赖版本变更。只想发布当前代码的新 patch/minor/major 版本时，优先使用下面流程。
+
+### 0. 发布前安全原则
+
+- 不要把 npm 密码、OTP、Granular Access Token 写进聊天、截图、`ACTIVE_CONTEXT.md`、`SKILL.md`、`.cursor/rules`、项目级 `.npmrc` 或 git。
+- 如果 token 曾经出现在终端记录、聊天附件或截图中，立刻到 npm 网站 revoke，并重新创建一个新 token。
+- token 推荐短有效期（例如 7 / 30 / 90 天），权限只给本包 `react-native-auto-positioned-popup` 的 `Read and write`。
+- 本机临时使用 token 后，发布完成要从用户级 npm 配置中删除。
+
+### 1. 在 npm 网站创建 Granular Access Token
+
+浏览器打开：
+
+```text
+https://www.npmjs.com/settings/stark2018/tokens
+```
+
+创建 token 时建议如下：
+
+| 配置项 | 建议值 |
+|---|---|
+| Token type | `Granular Access Token` |
+| Token name | `publish-react-native-auto-positioned-popup-local` |
+| Description | 用于本项目本地自动发布 |
+| Bypass 2FA | 勾选 `Bypass two-factor authentication (2FA)` |
+| Packages and scopes permissions | `Read and write` |
+| Selected package | `react-native-auto-positioned-popup` |
+| Organizations | 不需要（当前无 organization） |
+| Expiration | 建议 7 / 30 / 90 天，不建议永久 |
+| Allowed IP ranges | 可留空；若使用固定公网 IP，可按 CIDR 限制 |
+
+创建成功后复制 `npm_...` token。该 token 只显示一次，复制后不要粘贴到任何公开位置。
+
+### 2. 在本机临时配置 token
+
+在 PowerShell 中进入项目目录：
+
+```powershell
+Set-Location "D:\work\RN\react-native-auto-positioned-popup"
+```
+
+推荐先放入当前终端会话变量，再写入**用户级** npm 配置：
+
+```powershell
+$env:NPM_TOKEN="npm_xxxxxxxxxxxxxxxxxxxxx"
+npm config set //registry.npmjs.org/:_authToken $env:NPM_TOKEN --location=user
+npm whoami
+```
+
+`npm whoami` 应显示：
+
+```text
+stark2018
+```
+
+不要创建项目根目录 `.npmrc` 来保存 token，避免误提交。
+
+### 3. 发布前验证
+
+```powershell
+npm run build
+npm run lint
+npm view react-native-auto-positioned-popup version
+git status -sb
+```
+
+说明：
+
+- `npm run lint` 当前可能有 warning，但只要是 `0 errors` 就不会阻止发布。
+- `npm view react-native-auto-positioned-popup version` 用来确认线上当前版本，避免重复发布同一个版本号。
+- `git status -sb` 应尽量保持干净；如果只有文档上下文更新，按需要先提交。
+
+### 4. 升版本
+
+按发布语义选择其中一个：
+
+```powershell
+npm version patch -m "chore: release %s"
+npm version minor -m "chore: release %s"
+npm version major -m "chore: release %s"
+```
+
+例如 `1.2.20 -> 1.2.21` 使用：
+
+```powershell
+npm version patch -m "chore: release %s"
+```
+
+该命令会更新 `package.json` / `package-lock.json`（如适用）、创建 release commit，并创建对应 git tag（例如 `v1.2.21`）。
+
+### 5. 发布到 npm
+
+如果第 3 步已经手动执行过 build/lint，可使用：
+
+```powershell
+npm publish --ignore-scripts
+```
+
+如果希望发布时仍跑 `prepublishOnly` / `prepare`：
+
+```powershell
+npm publish
+```
+
+发布成功时会看到类似：
+
+```text
++ react-native-auto-positioned-popup@x.y.z
+```
+
+### 6. 验证 npm 并推送 Git
+
+```powershell
+npm view react-native-auto-positioned-popup version
+git push
+git push origin vX.Y.Z
+```
+
+把 `vX.Y.Z` 替换为本次版本，例如：
+
+```powershell
+git push origin v1.2.21
+```
+
+不要默认使用 `git push --tags`。本仓库曾出现旧 tag（例如 `v1.2.12`）远端已存在而导致 `git push --tags` 报错的情况；只推当前版本 tag 更稳。
+
+### 7. 发布后清理 token
+
+发布完成后，若 token 只是本次临时发布使用，执行：
+
+```powershell
+npm config delete //registry.npmjs.org/:_authToken --location=user
+```
+
+然后到 npm 网站的 Access Tokens 页面 revoke 该 token，或至少确认该 token 有短有效期和最小权限。
+
+### 8. 本项目 1.2.21 发布复盘
+
+- `1.2.21` 已成功发布到 npm。
+- `main` 已推送到 GitHub。
+- `v1.2.21` 已推送到 GitHub。
+- 之前 `git push --tags` 的报错只是不相关旧 tag `v1.2.12` 已存在，未影响 `1.2.21` 发布。
+- 本项目以后发布优先按本章节流程执行。
+
 ## 目录
 
+- [本项目以后每次发布 NPM 新版本（先看这里）](#本项目以后每次发布-npm-新版本先看这里)
 - [前置要求](#前置要求)
 - [🚀 自动化发布系统（推荐）](#-自动化发布系统推荐)
 - [手动发布步骤](#手动发布步骤)
